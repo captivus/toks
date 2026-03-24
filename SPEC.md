@@ -1,72 +1,16 @@
 # count-tokens Feature Specification
 
-## OPEN ITEMS — Review Feedback & Pending Decisions
+## Key Design Decisions
 
-This section captures feedback from architectural and engineering reviews, along with pending design decisions. These must be resolved before implementation begins.
-
-### Decisions Made (pending spec updates)
-
-1. **Eliminate multi-provider runs.** Single provider per invocation. This significantly simplifies output formatting, concurrency, error handling, and the CLI interface. Sections 4, 5, 7, and 8 need updating.
-
-2. **Simplify `--for` to specify a provider** (e.g., `--for claude`, `--for openai`, `--for gemini`), not a context like `claude-code` or `chatgpt-web`.
-
-3. **Operating modes (coding agent, web chat, API) only matter for context window percentage.** The token count is the same regardless of mode — only the "X% of Y context window" changes. Could show a summary table of percentages across modes.
-
-4. **For v1, assume coding agent context** as the default operating mode. This is the primary use case. Revisit multi-mode context window display later.
-
-### Still Under Discussion
-
-5. **How to present context window percentages.** For a single file, a table showing percentage across modes (coding agent, web chat, API) is straightforward. For a directory tree, showing multiple percentages per line gets noisy. Need to decide: show only the default mode's percentage in the tree, and a multi-mode summary at the bottom? Or just the default mode everywhere?
-
-### High Priority (blocks implementation)
-
-6. **`--model` with unknown models can't route to a provider.** If someone says `--model my-custom-model`, how do we know which API to call? Options: (a) require `--for` with `--model`, (b) infer provider from model name prefix, (c) add a `--provider` flag.
-
-7. **Config file location.** `.env` in current directory is wrong for a global CLI tool. Should be `~/.config/count-tokens/` or similar, with project-local `.env` as optional override.
-
-8. **Async vs sync.** Both reviewers recommend `asyncio`. All four SDKs support async clients. Need to state this in the spec.
-
-9. **Exit codes.** Not defined. Suggested: 0 = success (including partial success), 1 = all failed or config error, 2 = usage error.
-
-10. **Dependency stack.** Need to decide: CLI framework (click/typer), progress bar (rich/tqdm), MIME detection (python-magic vs stdlib mimetypes), gitignore parsing (pathspec).
-
-11. **Acceptance criteria and testing strategy.** No tests defined. Need per-section acceptance criteria and a dedicated testing section. All tests will use real APIs (no mocks). Need test fixtures (known files committed to repo).
-
-### Medium Priority (should address before implementation)
-
-12. **Missing API key in multi-provider run** — Now less relevant since we're doing single provider per run. But should still define behavior: error immediately.
-
-13. **Provider SDKs as optional dependencies.** Engineer recommends making each provider installable separately (e.g., `uv add --optional grok xai-sdk`). The xai-sdk gRPC dependency is 30-40MB.
-
-14. **Concurrency too high.** 10-20 is aggressive for lower-tier accounts. Recommend conservative default (5) with `--concurrency` flag.
-
-15. **`--convert` is a hidden project.** docx-to-PDF requires LibreOffice or similar. Both reviewers suggest deferring to v1.1, or explicitly scoping to a single conversion with documented system dependencies.
-
-16. **`.gitignore` discovery.** Which files? Nested? Global `~/.config/git/ignore`? Need to specify.
-
-### Lower Priority (address during implementation)
-
-17. **`--ext` and `--glob` overlap.** Consider cutting `--ext` since `--glob "*.py"` does the same thing.
-18. **Symlink loop detection** in directory traversal.
-19. **Default max file size.** Without `--max-size`, a 500MB file will blow up (OpenAI has 50MB limit).
-20. **stdin MIME type.** No filename to detect from. Assume text? Flag for override?
-21. **Empty directory / no matching files** behavior — should output "No files matched" and exit 0.
-22. **`--max-size` unit format** unspecified (KB, MB, GB, bare bytes).
-23. **`--depth` flag** for shallow directory traversal.
-24. **Data structures should be explicit** — both reviewers want concrete dataclasses for `TokenCountResult`, `FileResult`, `ModelInfo` in the spec.
-25. **Tree output rendering library** — `rich` recommended by both reviewers.
-26. **Backoff strategy** — should specify exponential backoff with jitter, and respect `Retry-After` headers.
-27. **Circuit breaker** — abort after K consecutive failures from a provider rather than burning through all files.
-
-### Scope Cuts for v1
-
-- **`--convert` flag** — defer to v1.1 (significant hidden complexity with system dependencies)
-- **`--estimate` flag** — defer to v1.1 (Grok image estimation is imprecise enough to be misleading)
-- **Multi-provider comparison in a single run** — eliminated (see decision #1 above)
-
-### Section 9 — Pending Research Results
-
-Plan tier research has been completed for all four providers. Results need to be incorporated into section 9's setup workflow. Key finding: for all providers, subscription plans and API access are independent — the wizard needs to ask about both separately.
+1. **Single provider per run** — no multi-provider comparison in v1
+2. **`--for` specifies a provider** — `--for claude`, `--for openai`, `--for gemini`, `--for grok`
+3. **Three-column context window percentages** — Agent, Web, API columns in output
+4. **LiteLLM model registry for context windows** — plain JSON from GitHub, no library dependency
+5. **`httpx` instead of provider SDKs** — all four endpoints are simple REST POSTs (~20 MB vs ~125 MB)
+6. **`asyncio` for concurrency** — `asyncio.Semaphore` for rate limit control
+7. **API-only tokenization** — no local/offline tokenizers
+8. **`--convert` and `--estimate` deferred to v1.1**
+9. **Real API tests only** — no mocks
 
 ---
 
@@ -79,6 +23,11 @@ LLMs have finite context windows. Before loading files into a model — whether 
 ### Target Users
 
 Developers and power users who work with LLM APIs and need to plan their context window usage — especially when working with large codebases or document sets.
+
+### Acceptance Criteria
+
+- Running `count-tokens --version` prints the version and exits 0
+- Running `count-tokens` with no arguments prints usage help and exits 2
 
 ## 2. Supported Models & Providers
 
@@ -93,8 +42,6 @@ The tool supports four providers at launch. Model names and context window sizes
 | claude-sonnet-4-6 | 200K (1M beta) | Default |
 | claude-opus-4-6 | 200K (1M beta) | |
 | claude-haiku-4-5 | 200K | |
-
-Also supports an `opusplan` alias (Opus for planning, Sonnet for implementation).
 
 #### Web Chat (claude.ai)
 
@@ -202,11 +149,31 @@ Free users limited to ~10 prompts per 2-hour window.
 | grok-4.1-fast | 2M |
 | grok-3 | 128K |
 
-### Design Considerations
+### Model Registry
 
-- The model registry should be a single, easily updated data structure (e.g., a dictionary or configuration file).
-- When a user specifies a model not in the registry, the tool should still attempt the API call but warn that it cannot display context window percentage.
-- The tool should provide a command to list all known models and their context windows.
+Context window sizes and model metadata are sourced from the [LiteLLM model registry](https://github.com/BerriAI/litellm/blob/main/model_prices_and_context_window.json) — a plain JSON file covering 2,600+ models across 140+ providers, updated multiple times daily. No dependency on the LiteLLM library itself.
+
+The fields we depend on per model entry:
+- `max_input_tokens` — context window size
+- `max_output_tokens` — max output length
+- `litellm_provider` — provider identifier (e.g., `anthropic`, `openai`, `vertex_ai-language-models`)
+- `supports_vision` — whether the model accepts images
+- `supports_pdf_input` — whether the model accepts PDFs
+
+The JSON is cached locally at `~/.config/count-tokens/models.json`.
+
+- The cache is populated on first run or during `count-tokens setup`
+- `count-tokens models` lists all known models for the configured provider(s)
+- `count-tokens models --refresh` updates the cached registry from GitHub
+- When a user specifies a model not in the registry, the tool errors with a helpful message suggesting `--refresh` or checking the model name
+- The registry also provides provider identification, enabling `--model` to infer which provider API to call
+
+### Acceptance Criteria
+
+- `count-tokens models` lists models with their context windows for each configured provider
+- `count-tokens models --refresh` fetches the latest LiteLLM registry JSON and caches it locally
+- Specifying `--model claude-sonnet-4-6` correctly identifies Anthropic as the provider
+- Specifying `--model nonexistent-model-xyz` produces a helpful error suggesting `--refresh`
 
 ## 3. Tokenization Strategy
 
@@ -218,71 +185,140 @@ Free users limited to ~10 prompts per 2-hour window.
 
 ### Provider Abstraction Layer
 
-Custom thin wrapper (no third-party unified LLM libraries). Each provider implements a common interface/protocol. New providers can be added by implementing the interface.
+Custom thin wrapper using `httpx` (async) — no provider SDKs, no third-party unified LLM libraries. All four providers expose their token counting as simple REST endpoints with JSON bodies and API key auth. Each provider is implemented as a small module (~30-50 lines). New providers can be added by implementing the common interface.
 
-**Common interface**: Each provider implements a method that accepts file content (as bytes), a MIME type, and a model identifier, and returns a result containing at minimum a total token count. Where the provider supports it (currently only Gemini), a per-modality breakdown (text, image, audio, video) is also returned. Providers return "unsupported" for file types they cannot handle.
+**Common interface**: Each provider implements a method that accepts file content (as bytes), a MIME type, and a model identifier, and returns a `TokenCountResult`. Providers raise `UnsupportedFileTypeError` for file types they cannot handle.
+
+### Core Data Structures
+
+```python
+@dataclass
+class TokenCountResult:
+    total_tokens: int
+    model: str                                  # the model used for counting
+    modality_breakdown: dict[str, int] | None   # e.g. {"TEXT": 400, "IMAGE": 258}; only Gemini provides this
+
+@dataclass
+class FileResult:
+    path: Path
+    mime_type: str | None                       # detected MIME type
+    file_size: int                              # size in bytes
+    status: Literal["pending", "success", "failed", "skipped"]
+    token_count: TokenCountResult | None
+    error: str | None
+    skip_reason: str | None
+
+@dataclass
+class ModelInfo:
+    model_id: str
+    provider: str
+    max_input_tokens: int
+    max_output_tokens: int | None
+
+@dataclass
+class Config:
+    default_provider: str
+    providers: dict[str, ProviderConfig]        # keyed by provider name
+
+@dataclass
+class ProviderConfig:
+    api_key: str
+    model: str                                  # default model for API calls
+    agent_model: str | None                     # model used in coding agent (None if no agent)
+    plan: str
+    has_coding_agent: bool
+
+@dataclass
+class RunResult:
+    results: list[FileResult]
+    tree: dict                                  # nested directory structure for rendering
+    provider: str
+    model: str
+
+class TokenCountProvider(Protocol):
+    provider_name: str
+    def supported_mime_types(self) -> set[str]: ...
+    async def count_tokens(self, *, content: bytes, mime_type: str, model: str) -> TokenCountResult: ...
+```
+
+The `supported_mime_types()` method lets the core decide before making an API call whether to skip the file — rather than discovering unsupported types as errors.
 
 ### File Type Detection and Content Packaging
 
-The tool detects each file's MIME type before passing it to a provider. Each provider implementation is responsible for packaging the content into the format its API expects. Providers differ in how they accept different file types:
+The tool detects each file's MIME type before passing it to a provider. Each provider implementation is responsible for packaging the content into the JSON payload its API expects. Providers differ in how they accept different file types:
 
 | File Type | Claude | OpenAI | Gemini | Grok |
 |-----------|--------|--------|--------|------|
-| Text/code | `text` content block | Raw string or `input_text` | String or `Part.from_bytes()` | `tokenize_text()` |
-| Image (JPEG, PNG, GIF, WebP) | `image` content block | `input_image` block | `Part.from_bytes()` | Not supported |
-| Image (HEIC, BMP, TIFF, SVG) | Not supported | Not supported | `Part.from_bytes()` | Not supported |
-| PDF | `document` content block | File input | `Part.from_bytes()` | Not supported |
-| Office docs (docx, xlsx, pptx) | Not supported (convert to PDF or text) | File input | `Part.from_bytes()` | Not supported |
+| Text/code | `messages[].content[]` with `type: "text"` | `input` as string | `contents[].parts[]` with `text` field | `text` field (string) |
+| Image (JPEG, PNG, GIF, WebP) | `type: "image"` with base64 `source` | `type: "input_image"` with base64 data URL | `inline_data` with `mime_type` + base64 | Not supported |
+| Image (HEIC, BMP, TIFF, SVG) | Not supported | Not supported | `inline_data` with `mime_type` + base64 | Not supported |
+| PDF | `type: "document"` with base64 `source` | File input (base64) | `inline_data` with `mime_type` + base64 | Not supported |
+| Office docs (docx, xlsx, pptx) | Not supported | File input (base64) | `inline_data` with `mime_type` + base64 | Not supported |
 
-MIME type detection and file reading are handled by the tool's core. Content packaging (choosing the right block type, encoding to base64 where needed, etc.) is handled by each provider implementation.
+MIME type detection and file reading are handled by the tool's core. Content packaging (building the right JSON structure, encoding to base64 where needed, etc.) is handled by each provider implementation.
 
-### Provider SDK Details
+### Provider REST Endpoint Details
 
-#### Claude (`anthropic`)
+All endpoints are called via `httpx` (async). No provider SDKs are used.
 
-- **Method**: `client.messages.count_tokens()`
-- **Input**: Content must be wrapped in a messages structure (cannot pass raw text directly). Supports text, images (base64 or URL: JPEG, PNG, GIF, WebP), and PDFs (document blocks, base64 or URL).
-- **Response**: Single integer (`input_tokens`). No per-item or per-modality breakdown.
+#### Claude
+
+- **Endpoint**: `POST https://api.anthropic.com/v1/messages/count_tokens`
+- **Auth**: `x-api-key` header + `anthropic-version: 2023-06-01` header. This is the only stable API version (since 2023). Verify against [Anthropic's versioning docs](https://platform.claude.com/docs/en/api/versioning) when updating the tool.
+- **Input**: JSON body with `model` and `messages` (same structure as Messages API). Content must be wrapped in a messages structure — cannot pass raw text directly. Supports text, images (base64 or URL: JPEG, PNG, GIF, WebP), and PDFs (document blocks, base64 or URL).
+- **Response**: `{ "input_tokens": <int> }`. No per-item or per-modality breakdown.
 - **Rate limits**: 100-8,000 RPM depending on usage tier. Free to call. Separate from message creation limits.
 - **Caveat**: Returns an estimate — actual usage may differ slightly. May include system-added tokens (not billed).
 
-#### OpenAI (`openai`)
+#### OpenAI
 
-- **Method**: `client.responses.input_tokens.count()`
-- **Input**: Accepts raw text strings or message arrays. Supports images (URL, base64 data URL, or file ID; with `detail` parameter affecting token count), PDFs, docx, spreadsheets, code files (via file ID, URL, or inline base64).
-- **Response**: Single integer (`input_tokens`). No breakdown.
+- **Endpoint**: `POST https://api.openai.com/v1/responses/input_tokens`
+- **Auth**: `Authorization: Bearer` header
+- **Input**: JSON body with `model` and `input` (same structure as Responses API). Accepts raw text strings or message arrays. Supports images (URL or base64 data URL; with `detail` parameter affecting token count), PDFs, docx, spreadsheets, code files (via URL or inline base64).
+- **Response**: `{ "object": "response.input_tokens", "input_tokens": <int> }`. No breakdown.
 - **Rate limits**: Not separately documented; likely shares Responses API limits.
 - **Caveat**: PDFs extract both text AND page images, so token counts can be higher than expected. 50 MB per file limit.
 
-#### Gemini (`google-genai`)
+#### Gemini
 
-- **Method**: `client.models.count_tokens()`
-- **Input**: Very flexible — accepts raw strings, PIL images, raw bytes with MIME type, or uploaded file references. Supports images (JPEG, PNG, WebP, HEIC, GIF, BMP, TIFF, SVG), video, audio, and PDFs.
-- **Response**: Total token count (`total_tokens`) plus per-modality breakdown (`prompt_tokens_details` with TEXT, IMAGE, AUDIO, VIDEO counts).
+- **Endpoint**: `POST https://generativelanguage.googleapis.com/v1beta/models/{model}:countTokens?key={api_key}`
+- **Auth**: API key as query parameter
+- **Input**: JSON body with `contents` array of parts. Very flexible — accepts text strings, inline bytes with MIME type. Supports images (JPEG, PNG, WebP, HEIC, GIF, BMP, TIFF, SVG), video, audio, and PDFs.
+- **Response**: `{ "totalTokens": <int>, "promptTokensDetails": [{ "modality": "TEXT", "tokenCount": <int> }, ...] }`. Includes per-modality breakdown.
 - **Rate limits**: 3,000 RPM. Free to call.
-- **Caveat**: `system_instruction` not supported via Gemini Developer API (only Vertex AI). Files must reach ACTIVE state before counting.
+- **Caveat**: Files uploaded via Files API must reach ACTIVE state before counting.
 
-#### Grok (`xai-sdk`, gRPC-based)
+#### Grok
 
-- **Method**: `client.tokenize.tokenize_text()`
-- **Input**: Plain text only. No image, PDF, or binary file support.
-- **Response**: List of token objects (each with `token_id`, `string_token`, `token_bytes`). Count is `len(tokens)`.
+- **Endpoint**: `POST https://api.x.ai/v1/tokenize-text`
+- **Auth**: `Authorization: Bearer` header
+- **Input**: JSON body with `model` and `text` (string). Plain text only — no image, PDF, or binary file support.
+- **Response**: `{ "token_ids": [{ "token_id": <int>, "string_token": <str>, "token_bytes": [<int>...] }, ...] }`. Count is `len(token_ids)`.
 - **Rate limits**: Not published; tier-based, visible in xAI Console.
-- **Caveat**: Text-only — no image or document tokenization. Explicitly underestimates actual usage because "inference endpoints automatically add pre-defined tokens." For images, xAI documents a range of 256-1,792 tokens based on resolution (512x512 ~ 1,610 tokens) but provides no API to compute this.
+- **Caveat**: Text-only — no image or document tokenization. Explicitly underestimates actual usage because "inference endpoints automatically add pre-defined tokens."
 
 ### Unsupported File Type Handling
 
-By default, the tool reports unsupported files in the output (e.g., "3 files skipped: docx not supported by Claude") without attempting to count them. Two opt-in flags modify this behavior:
-
-- **`--convert`**: Enables automatic file format conversion for unsupported types. For example, converting docx to PDF before sending to Claude's token counting endpoint. The original file is never modified; conversion happens in memory.
-- **`--estimate`**: Enables heuristic-based token counts where the provider's API cannot count a file type at all. For example, estimating Grok image tokens based on image dimensions using xAI's documented formula (256-1,792 tokens depending on resolution). Estimated counts are clearly marked in the output.
-
-These are independent flags — `--convert` handles format translation, `--estimate` handles provider capability gaps.
+When a file's type is not supported by the selected provider, it is skipped and reported in the output (e.g., "3 files skipped: docx not supported by Claude").
 
 ### Known Limitations
 
 - **Accuracy varies**: Claude and Gemini describe their counts as estimates. OpenAI's is deterministic for the same input. Grok explicitly underestimates because "inference endpoints automatically add pre-defined tokens."
 - **No per-file breakdown from any provider**: When counting a directory, the tool must make one API call per file to get individual counts.
+
+### Acceptance Criteria
+
+- Counting a known text file via Claude returns a positive integer token count
+- Counting the same text file via OpenAI returns a positive integer token count
+- Counting the same text file via Gemini returns a positive integer token count and a modality breakdown
+- Counting the same text file via Grok returns a positive integer token count
+- Counting a JPEG image via Claude returns a positive integer token count
+- Counting a JPEG image via Grok reports the file as unsupported and skips it
+- Counting a PDF via Claude returns a positive integer token count
+- Counting a docx file via Claude reports it as unsupported
+- Counting a docx file via OpenAI returns a positive integer token count
+- Each provider module is under 50 lines of code
+- Adding a hypothetical fifth provider requires only implementing the `TokenCountProvider` protocol
 
 ## 4. CLI Interface
 
@@ -309,85 +345,90 @@ Counting tokens is the default action — no subcommand required. Non-counting o
 - **Directory**: `count-tokens ./src` (recursive by default)
 - **stdin**: `cat file.py | count-tokens -` or piped input
 
-### Provider/Model Selection
+### Provider Selection
 
-- **No flag**: Uses the default context configured during `setup`
-- **`--for <context>`**: Overrides to a specific context (e.g., `--for claude-code`, `--for chatgpt-web`, `--for codex`)
-- **`--model <model-id>`**: Overrides to a specific model (e.g., `--model gpt-5.4`)
-- **Multiple providers**: Specify `--for` multiple times (e.g., `--for claude-code --for codex`)
-- **`--for` and `--model` together**: Error — these are conflicting instructions
+Single provider per invocation. The tool uses the configured default model for the selected provider to make the API call.
+
+- **No flag**: Uses the default provider and model configured during `setup`
+- **`--for <provider>`**: Specifies the provider (e.g., `--for claude`, `--for openai`, `--for gemini`, `--for grok`). Uses the configured default model for that provider.
+- **`--model <model-id>`**: Overrides to a specific model. Provider is inferred from the model name using the LiteLLM model registry. If the model is not in the registry, the tool errors with: "Model 'xyz' not found in registry. Use `--for <provider>` to specify the provider, or run `count-tokens models --refresh`."
+- **`--for` and `--model` together**: `--for` is ignored — `--model` is more specific and wins
 
 ### Filtering Flags
 
-- **`--glob <pattern>`**: Filter files by glob pattern (e.g., `--glob "*.py"`)
-- **`--ext <extension>`**: Filter by file extension (e.g., `--ext py`, `--ext ts`)
-- **`--max-size <size>`**: Exclude files larger than the given size (e.g., `--max-size 1MB`)
+- **`--glob <pattern>`**: Filter files by glob pattern (e.g., `--glob "*.py"`, `--glob "*.{py,ts}"`)
+- **`--max-size <size>`**: Exclude files larger than the given size (e.g., `--max-size 10MB`). Accepts KB, MB, GB (base 10). Default: 50MB.
 - **`--no-gitignore`**: Include files that would normally be skipped by `.gitignore` rules
 - **`--include-binary`**: Include binary files (excluded by default)
 
 ### Behavior Flags
 
-- **`--convert`**: Enable automatic file format conversion for unsupported types (see section 3)
-- **`--estimate`**: Enable heuristic-based token counts for unsupported file types (see section 3)
+- **`--concurrency <n>`**: Override the default number of concurrent API requests (default: 10)
+- **`--retries <n>`**: Override the default retry count for transient errors (default: 3)
+- **`--mime-type <type>`**: Override MIME type detection (useful with stdin, e.g., `--mime-type image/png`)
 
 ### Output Flags
 
 - **Default**: Tree-style display with per-file token counts and summary
 - **`--quiet` / `-q`**: Output only the total token count (useful for scripting)
-- **`--summary`**: Output only the per-provider totals, no tree
+- **`--summary`**: Output only the totals, no tree
+- **`--no-progress`**: Suppress progress bar (useful for AI agent tool use)
+
+### Acceptance Criteria
+
+- `count-tokens ./file.py --for claude` counts tokens and exits 0
+- `count-tokens ./src/ --for claude` recursively counts all files and exits 0
+- `cat file.py | count-tokens - --for claude` reads from stdin and returns a count
+- `count-tokens ./src/ --for claude --glob "*.py"` only counts Python files
+- `count-tokens ./src/ --for claude --max-size 1KB` skips files larger than 1KB
+- `count-tokens ./src/ --for claude --no-gitignore` includes files that would normally be gitignored
+- `count-tokens ./file.py --model claude-sonnet-4-6` infers provider and counts correctly
+- `count-tokens ./file.py --for claude --model gpt-5.4` ignores `--for` and uses OpenAI
+- `count-tokens ./file.py` with no flags uses the default provider from config
+- `count-tokens ./file.py --for claude` without a configured API key exits 1 with a helpful error
+- `count-tokens setup` launches the interactive configuration workflow
+- Both `count-tokens` and `ct` invoke the tool
 
 ## 5. Output Format
 
 ### Default (Tree View)
 
-```
-./src/                          [4,812 tokens] (2.4% of 200K)
-├── main.py                      1,203 tokens
-├── utils/                      [2,105 tokens]
-│   ├── helpers.py               1,450 tokens
-│   └── config.py                  655 tokens
-└── tests/                      [1,504 tokens]
-    ├── test_main.py               890 tokens
-    └── test_helpers.py            614 tokens
+Single provider per run. Three columns show context window percentage for each operating mode (Agent, Web, API):
 
-Total: 4,812 tokens (2.4% of claude-sonnet-4-6 200K context window)
-```
-
-### Multi-Provider (Tree View)
+- **Agent column**: Uses the configured coding agent model's context window from the LiteLLM registry (configured separately during setup). Shows "N/A" for providers without a coding agent (Grok).
+- **Web column**: Uses the plan-tier mapping from the user's configuration (see section 9).
+- **API column**: Uses the configured default model's context window from the LiteLLM registry.
 
 ```
-./src/                          [Claude: 4,812] [Codex: 4,650]
-├── main.py                      Claude: 1,203   Codex: 1,180
-├── utils/                      [Claude: 2,105] [Codex: 2,020]
-│   ├── helpers.py               Claude: 1,450   Codex: 1,390
-│   └── config.py                Claude:   655   Codex:   630
-└── tests/                      [Claude: 1,504] [Codex: 1,450]
-    ├── test_main.py             Claude:   890   Codex:   860
-    └── test_helpers.py          Claude:   614   Codex:   590
+                                                Agent    Web     API
+./src/                          [4,812 tokens]   2.4%   2.4%    0.5%
+├── main.py                      1,203 tokens    0.6%   0.6%    0.1%
+├── utils/                      [2,105 tokens]   1.1%   1.1%    0.2%
+│   ├── helpers.py               1,450 tokens    0.7%   0.7%    0.1%
+│   └── config.py                  655 tokens    0.3%   0.3%    0.1%
+└── tests/                      [1,504 tokens]   0.8%   0.8%    0.2%
+    ├── test_main.py               890 tokens    0.4%   0.4%    0.1%
+    └── test_helpers.py            614 tokens    0.3%   0.3%    0.1%
 
-Summary:
-  claude-sonnet-4-6:  4,812 tokens (2.4% of 200K)
-  gpt-5.4:            4,650 tokens (0.5% of 1M)
+Total: 4,812 tokens
+  Agent (200K):   2.4%
+  Web (200K):     2.4%
+  API (1M):       0.5%
 ```
 
 ### Quiet Mode (`--quiet`)
 
-Single provider:
 ```
 4812
-```
-
-Multiple providers:
-```
-claude-sonnet-4-6:4812
-gpt-5.4:4650
 ```
 
 ### Summary Mode (`--summary`)
 
 ```
-claude-sonnet-4-6:  4,812 tokens (2.4% of 200K)
-gpt-5.4:            4,650 tokens (0.5% of 1M)
+Total: 4,812 tokens
+  Agent (200K):   2.4%
+  Web (200K):     2.4%
+  API (1M):       0.5%
 ```
 
 ### Skipped Files
@@ -396,53 +437,84 @@ Unsupported or inaccessible files are reported after the tree:
 
 ```
 Skipped (3 files):
-  report.docx — docx not supported by Claude (use --convert)
+  report.docx — docx not supported by Claude
   photo.heic — HEIC not supported by Claude
-  diagram.png — image token counting not supported by Grok (use --estimate)
+  diagram.png — image token counting not supported by Grok
 ```
+
+### Acceptance Criteria
+
+- Default output shows a tree with token counts and three percentage columns (Agent, Web, API)
+- Directory subtotals are shown in brackets
+- Summary at the bottom shows totals per mode with context window sizes
+- `--quiet` outputs only the integer token count, no tree, no progress
+- `--summary` outputs only the totals per mode, no tree
+- Skipped files are listed after the tree with reasons
+- For Grok, the Agent column shows "N/A"
+- Output is rendered using `rich`
 
 ## 6. File Handling
 
 ### Directory Traversal
 
 - Recursive by default when a directory is given as the target
-- Respects `.gitignore` rules by default (skips files matching `.gitignore` patterns)
+- Does not follow symlinks into directories (avoids infinite loops). Symlinked files are still counted.
+- Respects `.gitignore` rules by default: walks up from the target directory looking for a `.git` directory to find the repo root, then applies all nested `.gitignore` files from root down (matching git's behavior). If no `.git` directory is found, no `.gitignore` rules are applied. Does not include global gitignore (`~/.config/git/ignore`).
 - `--no-gitignore` flag disables this and includes all files
+- If no files match after filtering, outputs "No files matched" and exits 0
 
 ### Filtering
 
 Applied before any API calls are made:
 
 - **Glob pattern** (`--glob "*.py"`): Only include files matching the pattern
-- **File extension** (`--ext py`): Only include files with the given extension
-- **File size** (`--max-size 1MB`): Exclude files larger than the given size
+- **File size** (`--max-size 10MB`): Exclude files larger than the given size. Accepts KB, MB, GB (base 10). Default: 50MB.
 - Multiple filters can be combined and are applied as AND conditions
+
+### stdin
+
+When reading from stdin (`count-tokens -`), the content is assumed to be plain text. Use `--mime-type` to override (e.g., `--mime-type image/png`).
 
 ### File Type Detection
 
-The tool detects each file's MIME type to determine how to handle it:
+The tool detects each file's MIME type using stdlib `mimetypes` (extension-based) to determine how to handle it:
 
-- **Text files** (source code, plain text, markdown, CSV, etc.): Read as text, sent to provider's text tokenization
-- **Image files** (JPEG, PNG, GIF, WebP, HEIC, etc.): Sent as binary with MIME type to providers that support image tokenization
-- **PDF files**: Sent as binary with MIME type to providers that support PDF tokenization
-- **Office documents** (docx, xlsx, pptx): Sent to providers that support them (OpenAI, Gemini); flagged as unsupported for others unless `--convert` is enabled
-- **Binary files** (executables, archives, etc.): Excluded by default. `--include-binary` overrides this, though most providers will not be able to tokenize them
+- **Text files** (`text/*`; source code, plain text, markdown, CSV, etc.): Read as text, sent to provider's text tokenization
+- **Image files** (`image/*`; JPEG, PNG, GIF, WebP, HEIC, etc.): Sent as binary with MIME type to providers that support image tokenization
+- **PDF files** (`application/pdf`): Sent as binary with MIME type to providers that support PDF tokenization
+- **Office documents** (`application/vnd.openxmlformats*`; docx, xlsx, pptx): Sent to providers that support them (OpenAI, Gemini); flagged as unsupported for others
+- **Binary files** (anything not matching the above categories): Excluded by default. `--include-binary` overrides this, though most providers will not be able to tokenize them
+- **Unknown MIME type** (extension not recognized by `mimetypes`): Defaults to `text/plain`. Common unrecognized extensions include `.tsx`, `.vue`, `.svelte`, `.rs`, etc.
 
 ### Unsupported File Handling
 
-When a file's type is not supported by the selected provider:
+When a file's type is not supported by the selected provider, it is skipped and reported in the "Skipped files" section of the output.
 
-- **Default**: File is skipped and reported in the "Skipped files" section of the output
-- **With `--convert`**: The tool attempts to convert the file to a supported format (e.g., docx to PDF for Claude). Conversion happens in memory; original files are never modified.
-- **With `--estimate`**: The tool applies provider-documented heuristics where available (e.g., Grok image tokens based on resolution). Estimated counts are clearly marked.
+### Acceptance Criteria
+
+- A directory with a `.gitignore` that excludes `*.log` skips `.log` files by default
+- `--no-gitignore` includes those `.log` files
+- Nested `.gitignore` files are respected (e.g., `src/.gitignore` applies within `src/`)
+- Symlinked directories are not followed
+- Symlinked files are counted normally
+- Binary files (e.g., `.exe`, `.zip`) are excluded by default
+- `--include-binary` includes binary files (which will likely be skipped as unsupported by the provider)
+- Files over 50MB are skipped by default
+- `--max-size 1MB` skips files over 1MB
+- An empty directory outputs "No files matched" and exits 0
+- A directory where all files are filtered out outputs "No files matched" and exits 0
+- stdin input is treated as plain text by default
+- `--mime-type image/png` with stdin sends content as PNG to the provider
 
 ## 7. Performance
 
 ### Concurrency
 
-- Fixed concurrency of 10-20 concurrent API requests per provider
-- On HTTP 429 (rate limit exceeded), back off and retry automatically
-- When multiple providers are specified, all providers are called simultaneously (independent APIs with independent rate limits)
+- Uses `asyncio` with `asyncio.Semaphore` for concurrency control
+- Default: 10 concurrent API requests
+- `--concurrency <n>` flag to override
+- On HTTP 429 (rate limit exceeded), exponential backoff: base delay 1 second, 2x multiplier, max delay 60 seconds, random jitter 0-100% of calculated delay. `Retry-After` header overrides the calculated delay when present.
+- Circuit breaker: abort after 10 consecutive failures from a provider, report whatever results were collected
 
 ### Progress Indication
 
@@ -451,11 +523,20 @@ When a file's type is not supported by the selected provider:
 - `--no-progress` flag suppresses the progress bar (useful for AI agent tool use)
 - `--quiet` flag also suppresses progress output
 
+### Acceptance Criteria
+
+- Counting a directory of 100+ files completes without errors (concurrency works)
+- `--concurrency 1` processes files sequentially
+- Progress bar appears for directory operations and updates as files complete
+- `--no-progress` suppresses the progress bar
+- `--quiet` suppresses the progress bar
+- No progress bar for single file operations
+
 ## 8. Error Handling
 
 ### Missing or Invalid API Keys
 
-If the user requests a provider whose API key is not configured, the tool reports the error immediately and exits (does not proceed with partial providers).
+If the selected provider's API key is not configured, the tool reports the error immediately and exits.
 
 ### Partial Failure
 
@@ -475,90 +556,305 @@ Each file is tracked independently with a status (pending, success, failed, skip
 
 ### Unsupported File Types
 
-Handled as described in section 6 — skipped by default, with `--convert` and `--estimate` flags for opt-in handling.
+Handled as described in section 6 — unsupported files are skipped and reported.
 
 ### Inaccessible Files
 
 Files that cannot be read (permissions, broken symlinks, etc.) are reported in the skipped/failed output and do not halt the run.
 
+### Exit Codes
+
+- **0** — success (including partial success where some files failed but results were produced)
+- **1** — failure (no results produced — missing API key, all files failed, provider unreachable)
+- **2** — usage error (bad arguments, unknown flags, invalid command syntax)
+
+### Acceptance Criteria
+
+- Missing API key for the selected provider exits 1 with a message naming the missing key
+- If 3 of 100 files fail with transient errors and retries are exhausted, the 97 successful results are shown plus the 3 failures listed
+- Non-transient errors (400, 401, 403) are not retried
+- `--retries 0` disables retries
+- After 10 consecutive failures, the tool aborts and reports partial results
+- Inaccessible files (permissions errors) are reported as skipped, not as fatal errors
+- Exit code is 0 when some files succeed
+- Exit code is 1 when no files succeed (all failed or missing API key)
+- Exit code is 2 for bad arguments (e.g., `count-tokens --invalid-flag`)
+
 ## 9. Configuration
+
+### Config File Location
+
+Configuration is stored in `~/.config/count-tokens/`:
+
+- `config.toml` — provider selections, plan tiers, default provider, default model per provider
+- `.env` — API keys (using standard env var names)
 
 ### Initial Setup Workflow
 
 A guided `count-tokens setup` command that walks the user through:
 
-- Which providers they have access to
-- For each provider: what plan/tier (e.g., Claude Max $200/mo, ChatGPT Plus $20/mo, Gemini Free, etc.)
-- Which contexts they use (coding agent, web chat, API)
-- A default context for day-to-day use (e.g., "I mostly use coding agents")
-- API keys for each configured provider (written to `.env` file)
+1. **Which providers do you use?** (multi-select: Claude, OpenAI, Gemini, Grok)
+2. **For each selected provider:**
+   - Enter your API key (validated by making a minimal token counting call — count tokens for the string `hello` — to confirm both the key and endpoint access)
+   - What plan/tier are you on? (simple list per provider — see below)
+   - Do you have access to the coding agent? (yes/no)
+   - If yes: Which model does your coding agent use? (with sensible defaults: `claude-opus-4-6`, `gpt-5.4`, `gemini-3-flash`)
+   - Which model do you primarily use for the API? (with sensible defaults: `claude-sonnet-4-6`, `gpt-5.4`, `gemini-3-flash`, `grok-4.1`)
+3. **Set a default provider** for when no `--for` flag is specified
 
-### Stored Configuration
+The plan/tier question determines the web chat context window for the "Web" column in output. The coding agent question determines whether the "Agent" column shows a value or "N/A". The model question determines which model is used for API calls and the "API" column context window.
 
-- API keys via `.env` file (using standard env var names: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GOOGLE_API_KEY`, `XAI_API_KEY`)
-- Provider/plan/tier selections
-- Default context and model preferences
-- Configuration can be re-run at any time to update
+#### Plan Options by Provider
+
+**Claude:** Free, Pro ($20/mo), Max 5x ($100/mo), Max 20x ($200/mo), Team Standard, Team Premium, Enterprise
+
+**OpenAI:** Free, Go ($8/mo), Plus ($20/mo), Pro ($200/mo), Business, Enterprise
+
+**Gemini:** Free, AI Plus ($7.99/mo), AI Pro ($19.99/mo), AI Ultra ($249.99/mo)
+
+**Grok:** Free, X Premium ($8/mo), X Premium+ ($40/mo), SuperGrok ($30/mo), SuperGrok Heavy ($300/mo)
+
+#### Plan-to-Web-Context-Window Mapping
+
+These mappings determine the "Web" column context window percentage:
+
+| Provider | Plan | Web Context Window |
+|----------|------|--------------------|
+| Claude | Free, Pro, Max, Team Standard, Team Premium | 200K |
+| Claude | Enterprise | 500K |
+| OpenAI | Free | 16K |
+| OpenAI | Go | 32K |
+| OpenAI | Plus, Business | 32K |
+| OpenAI | Pro, Enterprise | 128K |
+| Gemini | Free | 32K |
+| Gemini | AI Plus | 128K |
+| Gemini | AI Pro, AI Ultra | 1M |
+| Grok | Free, X Premium, X Premium+ | 128K |
+| Grok | SuperGrok | 128K |
+| Grok | SuperGrok Heavy | 256K |
+
+#### Coding Agent Availability
+
+| Provider | Agent Available | Agent Context Window |
+|----------|---------------|---------------------|
+| Claude | Pro, Max, Team Premium, Enterprise | From LiteLLM registry (per model) |
+| OpenAI | Plus, Pro, Business, Enterprise | From LiteLLM registry (per model) |
+| Gemini | All tiers (free with Google login) | From LiteLLM registry (per model) |
+| Grok | No coding agent | N/A |
+
+### Stored Configuration Schema
+
+`config.toml` example:
+
+```toml
+default_provider = "claude"
+
+[providers.claude]
+model = "claude-sonnet-4-6"
+agent_model = "claude-opus-4-6"
+plan = "max_20x"
+has_coding_agent = true
+
+[providers.openai]
+model = "gpt-5.4"
+agent_model = "gpt-5.4"
+plan = "plus"
+has_coding_agent = true
+
+[providers.gemini]
+model = "gemini-3-flash"
+agent_model = "gemini-3-flash"
+plan = "ai_pro"
+has_coding_agent = true
+```
+
+`.env` example:
+
+```
+ANTHROPIC_API_KEY=sk-ant-...
+OPENAI_API_KEY=sk-...
+GOOGLE_API_KEY=AI...
+XAI_API_KEY=xai-...
+```
 
 ### Runtime Overrides
 
-- `--for <context>` (e.g., `--for claude-code`, `--for chatgpt-web`) to override the default context for a single run
-- `--model <model-id>` to override with a specific model
+- `--for <provider>` overrides the default provider for a single run
+- `--model <model-id>` overrides to a specific model (provider inferred from LiteLLM registry)
 - Runtime flags take precedence over stored configuration
 
-## 10. Future Considerations
+### Re-running Setup
+
+`count-tokens setup` can be re-run at any time to update providers, plans, or API keys. It preserves existing values as defaults so the user only needs to change what's different.
+
+### Acceptance Criteria
+
+- `count-tokens setup` creates `~/.config/count-tokens/config.toml` and `~/.config/count-tokens/.env`
+- API keys entered during setup are validated with a minimal token counting call
+- Invalid API keys are rejected with a helpful error during setup
+- After setup, `count-tokens ./file.py` works without any flags (uses default provider and model)
+- Re-running setup preserves previously entered values as defaults
+- `config.toml` contains provider selections, plan tiers, default model, and default provider
+- `.env` contains API keys in the standard env var format
+- Changing plan tier in setup changes the Web column context window percentages in output
+
+## 10. Dependencies
+
+Requires Python 3.11+ (for `tomllib` in stdlib).
+
+- **HTTP client**: `httpx` (async, for all provider API calls — no provider SDKs)
+- **CLI framework**: `typer`
+- **Progress bar / output rendering**: `rich` (also handles tree rendering and styled terminal output)
+- **Interactive prompts**: `questionary` (multi-select, single-select, password input for the setup wizard)
+- **MIME type detection**: stdlib `mimetypes` (extension-based, no system dependency required)
+- **Gitignore parsing**: `pathspec`
+- **Config file**: `tomllib` (stdlib for reading) + `tomli-w` (for writing)
+- **Env file**: `python-dotenv`
+
+## 11. Project Structure
+
+```
+src/count_tokens/
+    __init__.py
+    __main__.py          # entry point for python -m count_tokens
+    cli.py               # typer app, command definitions, argument parsing
+    config.py            # setup wizard, config.toml and .env reading/writing
+    registry.py          # LiteLLM JSON fetching, caching, model lookup
+    scanner.py           # file discovery, gitignore, filtering, MIME detection
+    runner.py            # async orchestrator: concurrency, retries, backoff, circuit breaker
+    output.py            # rich tree rendering, summary formatting, quiet/summary modes
+    providers/
+        __init__.py      # provider registry, lookup by name
+        base.py          # Protocol, TokenCountResult, FileResult, ModelInfo, exceptions
+        claude.py        # ~30-50 lines
+        openai.py        # ~30-50 lines
+        gemini.py        # ~30-50 lines
+        grok.py          # ~30-50 lines
+tests/
+    conftest.py          # shared fixtures, pytest markers for providers
+    fixtures/
+        hello.py
+        hello.txt
+        image.png
+        image.jpg
+        document.pdf
+        document.docx
+        empty.txt
+        tree/            # nested directory structure with .gitignore for traversal tests
+    test_providers.py
+    test_cli.py
+    test_output.py
+    test_scanner.py
+    test_runner.py
+    test_config.py
+    test_registry.py
+```
+
+## 12. Testing
+
+### Strategy
+
+All tests use real provider APIs. No mocks. This ensures the tool is validated against actual provider behavior, including payload formatting, authentication, and response parsing.
+
+### Requirements
+
+- API keys for all four providers must be configured to run the full test suite
+- Tests can be run for a subset of providers using pytest markers (e.g., `pytest -m claude`)
+- Tests are run via `uv run pytest`
+
+### Test Fixtures
+
+A `tests/fixtures/` directory committed to the repo containing known test files:
+
+- `hello.py` — small Python source file (known content for reproducible counts)
+- `hello.txt` — plain text file
+- `image.png` — small PNG image
+- `image.jpg` — small JPEG image
+- `document.pdf` — small single-page PDF
+- `document.docx` — small Word document
+- `empty.txt` — empty file
+- `large.txt` — file near or at the 50MB default limit (generated, not committed; created by a test setup fixture)
+- A `fixtures/tree/` directory structure with nested subdirectories, a `.gitignore`, and mixed file types for tree/traversal tests
+
+### Test Categories
+
+#### Provider Tests (per provider)
+
+- Count tokens for a known text file and verify a positive integer is returned
+- Count tokens for an image file (where supported) and verify a positive integer
+- Count tokens for a PDF (where supported) and verify a positive integer
+- Verify unsupported file types raise `UnsupportedFileTypeError`
+- Verify authentication errors (bad API key) return appropriate errors
+- Verify the HTTP request is correctly formatted (right endpoint, headers, body shape)
+
+#### CLI Tests
+
+- `count-tokens ./file.py --for claude` exits 0 and outputs a token count
+- `count-tokens ./src/ --for claude` outputs a tree with per-file counts
+- `count-tokens - --for claude < file.py` reads from stdin
+- `--quiet` outputs only an integer
+- `--summary` outputs only the totals
+- `--glob "*.py"` filters correctly
+- `--max-size 1KB` skips large files
+- `--no-gitignore` includes gitignored files
+- Bad arguments exit 2
+- Missing API key exits 1
+
+#### Output Tests
+
+- Tree output includes Agent, Web, and API percentage columns
+- Directory subtotals are calculated correctly
+- Skipped files section lists unsupported files with reasons
+- Quiet mode outputs only the integer
+
+#### File Handling Tests
+
+- `.gitignore` rules are respected (files matching patterns are skipped)
+- Nested `.gitignore` files work correctly
+- Symlinked directories are not followed
+- Binary files are excluded by default
+- Files over 50MB are skipped by default
+- Empty directory outputs "No files matched"
+
+#### Error Handling Tests
+
+- Partial failure: some files succeed, some fail — exit 0, both results and errors reported
+- All files fail — exit 1
+- Retries happen on transient errors (429, 500)
+- Retries do not happen on non-transient errors (400, 403)
+- Circuit breaker triggers after 10 consecutive failures
+
+#### Configuration Tests
+
+- `count-tokens setup` creates config files in `~/.config/count-tokens/`
+- Config is read correctly on subsequent runs
+- `--for` and `--model` override config defaults
+
+## 13. Deferred to v1.1
+
+### `--convert` Flag
+
+Enables automatic file format conversion for unsupported types. For example, converting docx to PDF before sending to Claude's token counting endpoint. The original file is never modified; conversion happens in memory.
+
+**Rationale for deferral**: Reliable file format conversion in Python requires system-level dependencies (e.g., LibreOffice for docx-to-PDF). This adds significant complexity and installation burden for v1.
+
+### `--estimate` Flag
+
+Enables heuristic-based token counts where the provider's API cannot count a file type at all. For example, estimating Grok image tokens based on image dimensions using xAI's documented formula (256-1,792 tokens depending on resolution). Estimated counts would be clearly marked in the output.
+
+**Rationale for deferral**: The heuristic ranges (e.g., Grok's 256-1,792 tokens for images) are imprecise enough to be misleading without clear communication to the user about the uncertainty.
+
+### `--depth` Flag
+
+Limits directory recursion depth (e.g., `--depth 1` only counts files in the immediate directory).
+
+## 14. Future Considerations
 
 - Additional model/provider support
 - Result caching — cache token counts for unchanged files (keyed by file modification time and provider/model) to avoid redundant API calls on repeated runs
-- `--convert` flag for automatic file format conversion (deferred from v1 due to system dependency complexity)
-- `--estimate` flag for heuristic-based token counts (deferred from v1)
 - Multi-provider comparison in a single run
-- Multi-mode context window percentage display (coding agent, web chat, API side by side)
+- Global gitignore support (`~/.config/git/ignore`)
 
-## Appendix A: Provider Plan Tiers (Research Results)
+---
 
-This data was collected March 2026 and needs to be incorporated into the section 9 setup workflow.
-
-### Anthropic (Claude)
-
-| Plan | Price | Models | Claude Code | Web Chat | API | Context Window |
-|------|-------|--------|-------------|----------|-----|---------------|
-| Free | $0 | Sonnet 4.6, Haiku 4.5 | No | Yes | Separate (pay-per-token) | 200K |
-| Pro | $20/mo | All | Yes | Yes | Separate | 200K |
-| Max 5x | $100/mo | All | Yes | Yes | Separate | 200K (1M beta) |
-| Max 20x | $200/mo | All | Yes | Yes | Separate | 200K (1M beta) |
-| Team Standard | $25-30/seat | All | No | Yes | Separate | 200K |
-| Team Premium | $100-150/seat | All | Yes | Yes | Separate | 200K |
-| Enterprise | Custom | All | Yes | Yes | Separate | Up to 500K |
-
-### OpenAI (GPT)
-
-| Plan | Price | Models (Web) | Codex | API | Web Context Window |
-|------|-------|-------------|-------|-----|--------------------|
-| Free | $0 | GPT-5.2 Instant/Mini | Temporary promo | Separate (pay-per-token) | ~16K |
-| Go | $8/mo | GPT-5.2 Instant | Temporary promo | Separate | ~16-32K |
-| Plus | $20/mo | GPT-5.2, GPT-5.4 Thinking, o3 | Yes (~25 tasks/day) | Separate | ~32K |
-| Pro | $200/mo | All including GPT-5.2 Pro, GPT-5.4 Pro | Yes (higher limits) | Separate | ~128K |
-| Business | $25-30/seat | Same as Plus | Yes | Separate | ~32K |
-| Enterprise | Custom | All | Yes | Separate | ~128K |
-
-### Google (Gemini)
-
-| Plan | Price | Web Context Window | CLI Access | API |
-|------|-------|--------------------|------------|-----|
-| Free | $0 | ~32K | Yes (free Google login, 1M context) | Separate (free tier available) |
-| AI Plus | $7.99/mo | 128K | Yes | Separate |
-| AI Pro | $19.99/mo | 1M | Yes (may boost quotas) | Separate |
-| AI Ultra | $249.99/mo | 1M | Yes (may boost quotas) | Separate |
-
-Note: Gemini CLI is usable for free with Google login (1M context, 60 RPM) regardless of subscription tier.
-
-### xAI (Grok)
-
-| Plan | Price | Web Context | API |
-|------|-------|------------|-----|
-| Free | $0 | Limited, ~10 msg/2hr | Separate (pay-per-token, $25 signup credit) |
-| X Premium | $8/mo | Basic, ~100 msg/2hr | Separate |
-| X Premium+ | $40/mo | Priority, higher limits | Separate |
-| SuperGrok | $30/mo | 128K, unlimited queries | Separate |
-| SuperGrok Heavy | $300/mo | 256K, Grok 4 Heavy exclusive | Separate |
+*Plan tier data was researched March 2026 and should be verified periodically.*
