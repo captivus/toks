@@ -40,10 +40,10 @@ The interactive wizard walks you through selecting providers, entering API keys,
 toks src/main.py --for claude
 
 # Entire directory with glob filter
-toks src/ --for gemini --glob "*.py"
+toks src/ --for claude --glob "*.py"
 
 # Quiet mode (just the number)
-toks README.md --for openai -q
+toks README.md --for claude -q
 
 # Pipe from stdin
 cat file.py | toks - --for claude
@@ -52,23 +52,34 @@ cat file.py | toks - --for claude
 ### Output
 
 ```
-Provider: gemini (gemini-2.5-flash)
+Provider: claude (claude-opus-4-6)
 
-File                    Tokens   Agent     Web     API
-src/                   [4,812]    2.4%    2.4%    0.5%
-├── main.py              1,203    0.6%    0.6%    0.1%
-├── config.py              892    0.4%    0.4%   <0.1%
-└── utils/             [2,717]    1.4%    1.4%    0.3%
-    ├── parser.py        1,456    0.7%    0.7%    0.1%
-    └── helpers.py       1,261    0.6%    0.6%    0.1%
+File                   Tokens  Agent    Web    API
+toks/                [17,911]   1.8%   9.0%   1.8%
+├── providers/        [4,174]   0.4%   2.1%   0.4%
+│   ├── __init__.py       324  <0.1%   0.2%  <0.1%
+│   ├── base.py           474  <0.1%   0.2%  <0.1%
+│   ├── claude.py         600  <0.1%   0.3%  <0.1%
+│   ├── gemini.py         643  <0.1%   0.3%  <0.1%
+│   ├── grok.py         1,315   0.1%   0.7%   0.1%
+│   └── openai.py         818  <0.1%   0.4%  <0.1%
+├── __init__.py            33  <0.1%  <0.1%  <0.1%
+├── __main__.py            28  <0.1%  <0.1%  <0.1%
+├── cli.py              3,188   0.3%   1.6%   0.3%
+├── config.py           1,338   0.1%   0.7%   0.1%
+├── output.py           2,260   0.2%   1.1%   0.2%
+├── registry.py           978  <0.1%   0.5%  <0.1%
+├── runner.py           1,146   0.1%   0.6%   0.1%
+├── scanner.py          1,318   0.1%   0.7%   0.1%
+└── setup.py            3,448   0.3%   1.7%   0.3%
 
-Total: 4,812 tokens
-  Agent (200K):   2.4%
-  Web (200K):     2.4%
-  API (1M):       0.5%
+Total: 17,911 tokens
+  Agent (1M):  1.8%
+  Web (200K):    9.0%
+  API (1M):    1.8%
 ```
 
-Three percentage columns show context window usage for each provider's interfaces: coding agent, web chat, and API.
+Three percentage columns show context window usage for each provider's interfaces: coding agent, web chat, and API. The Agent and Web columns populate when you configure your plan and coding agent model via `toks setup`.
 
 ## Supported Providers
 
