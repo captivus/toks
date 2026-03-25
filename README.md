@@ -2,10 +2,10 @@
 
 [![PyPI version](https://img.shields.io/pypi/v/toks)](https://pypi.org/project/toks/)
 [![Python versions](https://img.shields.io/pypi/pyversions/toks)](https://pypi.org/project/toks/)
-[![License](https://img.shields.io/pypi/l/toks)](https://github.com/captivus/toks/blob/master/LICENSE)
+[![License](https://img.shields.io/pypi/l/toks?cacheSeconds=3600)](https://github.com/captivus/toks/blob/master/LICENSE)
 [![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey)](https://pypi.org/project/toks/)
 [![CI](https://img.shields.io/github/actions/workflow/status/captivus/toks/ci.yml?branch=master&label=CI)](https://github.com/captivus/toks/actions)
-[![Downloads](https://img.shields.io/pypi/dm/toks)](https://pypi.org/project/toks/)
+[![Downloads](https://img.shields.io/pypi/dm/toks?cacheSeconds=3600)](https://pypi.org/project/toks/)
 
 Count tokens for files and directories across LLM providers. See how much of a model's context window your content will consume before you spend the tokens.
 
