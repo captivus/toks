@@ -21,6 +21,8 @@ Or with [uv](https://docs.astral.sh/uv/):
 uv tool install toks
 ```
 
+The `ct` shorthand alias is also available — `ct src/` is equivalent to `toks src/`.
+
 ## Quick Start
 
 ### 1. Configure your providers
@@ -95,6 +97,8 @@ toks <target> [options]    # Count tokens (default command)
 toks setup                 # Interactive configuration wizard
 toks models --refresh      # List known models / refresh registry
 ```
+
+`ct` can be used anywhere in place of `toks`.
 
 ## Options
 
