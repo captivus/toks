@@ -8,7 +8,7 @@ from pathlib import Path
 import httpx
 
 REGISTRY_URL = "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json"
-CACHE_DIR = Path.home() / ".config" / "count-tokens"
+CACHE_DIR = Path.home() / ".config" / "toks"
 CACHE_FILE = CACHE_DIR / "models.json"
 
 PROVIDER_MAP = {

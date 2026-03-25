@@ -8,12 +8,12 @@ from pathlib import Path
 
 import pytest
 
-from count_tokens.providers.base import FileResult, TokenCountResult, UnsupportedFileTypeError
-from count_tokens.providers.claude import ClaudeProvider
-from count_tokens.providers.openai import OpenAIProvider
-from count_tokens.providers.gemini import GeminiProvider
-from count_tokens.providers.grok import GrokProvider
-from count_tokens.runner import count_file_tokens
+from toks.providers.base import FileResult, TokenCountResult, UnsupportedFileTypeError
+from toks.providers.claude import ClaudeProvider
+from toks.providers.openai import OpenAIProvider
+from toks.providers.gemini import GeminiProvider
+from toks.providers.grok import GrokProvider
+from toks.runner import count_file_tokens
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -224,11 +224,11 @@ class TestEdgeCases:
     @pytest.mark.claude
     def test_claude_directory_no_failures(self, claude_provider):
         """Counting the fixtures directory via Claude should have no unexpected failures."""
-        from count_tokens.scanner import scan_files
+        from toks.scanner import scan_files
         scanned = scan_files(target=FIXTURES)
         file_results = [FileResult(path=p, mime_type=m, file_size=s) for p, m, s in scanned]
         asyncio.run(
-            __import__("count_tokens.runner", fromlist=["run_token_counting"]).run_token_counting(
+            __import__("toks.runner", fromlist=["run_token_counting"]).run_token_counting(
                 provider=claude_provider, file_results=file_results,
                 model="claude-sonnet-4-6", concurrency=5, retries=1,
             )
@@ -242,27 +242,27 @@ class TestGrokImageTiling:
 
     def test_small_image(self):
         """A 10x10 image = 1 tile (ceil(10/448) * ceil(10/448)) + 1 extra = 2 tiles = 512 tokens."""
-        from count_tokens.providers.grok import _calculate_image_tokens
+        from toks.providers.grok import _calculate_image_tokens
         assert _calculate_image_tokens(width=10, height=10) == 512
 
     def test_exact_tile(self):
         """A 448x448 image = 1 tile + 1 extra = 2 tiles = 512 tokens."""
-        from count_tokens.providers.grok import _calculate_image_tokens
+        from toks.providers.grok import _calculate_image_tokens
         assert _calculate_image_tokens(width=448, height=448) == 512
 
     def test_two_tiles(self):
         """A 449x448 image = 2 tiles + 1 extra = 3 tiles = 768 tokens."""
-        from count_tokens.providers.grok import _calculate_image_tokens
+        from toks.providers.grok import _calculate_image_tokens
         assert _calculate_image_tokens(width=449, height=448) == 768
 
     def test_max_tiles(self):
         """A very large image caps at 6 tiles + 1 extra = 7 tiles = 1792 tokens."""
-        from count_tokens.providers.grok import _calculate_image_tokens
+        from toks.providers.grok import _calculate_image_tokens
         assert _calculate_image_tokens(width=5000, height=5000) == 1792
 
     def test_png_dimensions(self):
         """Verify we can read PNG dimensions from the test fixture."""
-        from count_tokens.providers.grok import _get_image_dimensions
+        from toks.providers.grok import _get_image_dimensions
         content = (FIXTURES / "image.png").read_bytes()
         dims = _get_image_dimensions(content=content, mime_type="image/png")
         assert dims is not None
@@ -270,7 +270,7 @@ class TestGrokImageTiling:
 
     def test_jpeg_dimensions(self):
         """Verify we can read JPEG dimensions from the test fixture."""
-        from count_tokens.providers.grok import _get_image_dimensions
+        from toks.providers.grok import _get_image_dimensions
         content = (FIXTURES / "image.jpg").read_bytes()
         dims = _get_image_dimensions(content=content, mime_type="image/jpeg")
         assert dims is not None

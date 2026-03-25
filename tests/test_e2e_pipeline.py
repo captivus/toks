@@ -15,13 +15,13 @@ import pytest
 from click.testing import CliRunner
 from dotenv import load_dotenv
 
-from count_tokens.cli import app
-from count_tokens.config import save_config
-from count_tokens.providers.base import Config, ProviderConfig
-from count_tokens.setup import gather_config, FixedPrompter
+from toks.cli import app
+from toks.config import save_config
+from toks.providers.base import Config, ProviderConfig
+from toks.setup import gather_config, FixedPrompter
 
 load_dotenv()
-load_dotenv(Path.home() / ".config" / "count-tokens" / ".env")
+load_dotenv(Path.home() / ".config" / "toks" / ".env")
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -75,11 +75,11 @@ def _run_cli(*, args: list[str]) -> tuple[int, str]:
 @pytest.fixture
 def isolated_config(tmp_path, monkeypatch):
     """Redirect config to tmp for test isolation."""
-    config_dir = tmp_path / "count-tokens"
+    config_dir = tmp_path / "toks"
     config_dir.mkdir()
-    monkeypatch.setattr("count_tokens.config.CONFIG_DIR", config_dir)
-    monkeypatch.setattr("count_tokens.config.CONFIG_FILE", config_dir / "config.toml")
-    monkeypatch.setattr("count_tokens.config.ENV_FILE", config_dir / ".env")
+    monkeypatch.setattr("toks.config.CONFIG_DIR", config_dir)
+    monkeypatch.setattr("toks.config.CONFIG_FILE", config_dir / "config.toml")
+    monkeypatch.setattr("toks.config.ENV_FILE", config_dir / ".env")
     return config_dir
 
 
@@ -158,9 +158,9 @@ class TestConfigRoundTrip:
             },
         )
         save_config(config=config)
-        loaded1 = __import__("count_tokens.config", fromlist=["load_config"]).load_config()
+        loaded1 = __import__("toks.config", fromlist=["load_config"]).load_config()
         save_config(config=loaded1)
-        loaded2 = __import__("count_tokens.config", fromlist=["load_config"]).load_config()
+        loaded2 = __import__("toks.config", fromlist=["load_config"]).load_config()
         assert loaded1.providers["claude"].api_key == loaded2.providers["claude"].api_key
         assert loaded2.providers["claude"].api_key == "sk-ant-abc123xyz"
 
@@ -178,5 +178,5 @@ class TestConfigRoundTrip:
             },
         )
         save_config(config=config)
-        loaded = __import__("count_tokens.config", fromlist=["load_config"]).load_config()
+        loaded = __import__("toks.config", fromlist=["load_config"]).load_config()
         assert loaded.providers["openai"].api_key == "sk-proj-abc=123+xyz/test"

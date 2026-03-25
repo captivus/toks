@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from count_tokens.registry import (
+from toks.registry import (
     get_registry,
     infer_provider,
     get_context_window,

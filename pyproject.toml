@@ -1,9 +1,27 @@
 [project]
-name = "count-tokens"
+name = "toks"
 version = "0.1.0"
-description = "Add your description here"
+description = "Count tokens for files across LLM providers from the command line"
 readme = "README.md"
 requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [
+    {name = "Corey Gallon", email = "366332+captivus@users.noreply.github.com"},
+]
+keywords = ["tokens", "llm", "cli", "context-window", "tokenizer"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development",
+    "Topic :: Text Processing",
+]
 dependencies = [
     "click>=8.3.1",
     "httpx>=0.28.1",
@@ -14,9 +32,15 @@ dependencies = [
     "tomli-w>=1.2.0",
 ]
 
+[project.urls]
+Homepage = "https://github.com/captivus/toks"
+Repository = "https://github.com/captivus/toks"
+"Bug Tracker" = "https://github.com/captivus/toks/issues"
+Documentation = "https://github.com/captivus/toks/tree/master/docs"
+
 [project.scripts]
-count-tokens = "count_tokens.cli:app"
-ct = "count_tokens.cli:app"
+toks = "toks.cli:app"
+ct = "toks.cli:app"
 
 [tool.pytest.ini_options]
 markers = [

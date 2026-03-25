@@ -4,7 +4,7 @@ import base64
 
 import httpx
 
-from count_tokens.providers.base import TokenCountResult, UnsupportedFileTypeError
+from toks.providers.base import TokenCountResult, UnsupportedFileTypeError
 
 NON_TEXT_SUPPORTED = {
     "application/json", "application/xml", "application/javascript",

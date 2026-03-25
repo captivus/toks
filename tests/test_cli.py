@@ -9,10 +9,10 @@ import pytest
 from click.testing import CliRunner
 from dotenv import load_dotenv
 
-from count_tokens.cli import app
+from toks.cli import app
 
 load_dotenv()
-load_dotenv(Path.home() / ".config" / "count-tokens" / ".env")
+load_dotenv(Path.home() / ".config" / "toks" / ".env")
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -25,20 +25,20 @@ class TestBasicCLI:
     def test_version(self):
         result = make_runner().invoke(app, ["--version"])
         assert result.exit_code == 0
-        assert "count-tokens" in result.output
+        assert "toks" in result.output
 
     def test_no_args_shows_help(self):
         result = make_runner().invoke(app, [])
         assert result.exit_code == 0
-        assert "count-tokens" in result.output.lower() or "usage" in result.output.lower()
+        assert "toks" in result.output.lower() or "usage" in result.output.lower()
 
     def test_nonexistent_file(self):
         result = make_runner().invoke(app, ["/nonexistent/file.txt", "--model", "gemini-2.5-flash"])
         assert result.exit_code != 0
 
     def test_no_provider_no_config(self, tmp_path, monkeypatch):
-        monkeypatch.setattr("count_tokens.config.CONFIG_FILE", tmp_path / "nonexistent" / "config.toml")
-        monkeypatch.setattr("count_tokens.config.ENV_FILE", tmp_path / "nonexistent" / ".env")
+        monkeypatch.setattr("toks.config.CONFIG_FILE", tmp_path / "nonexistent" / "config.toml")
+        monkeypatch.setattr("toks.config.ENV_FILE", tmp_path / "nonexistent" / ".env")
         env = {k: v for k, v in os.environ.items() if not k.endswith("_API_KEY")}
         result = CliRunner(env=env).invoke(app, [str(FIXTURES / "hello.txt")])
         assert result.exit_code == 1

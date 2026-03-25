@@ -19,10 +19,10 @@ import os
 
 import pytest
 
-from count_tokens.providers.claude import ClaudeProvider
-from count_tokens.providers.openai import OpenAIProvider
-from count_tokens.providers.gemini import GeminiProvider
-from count_tokens.providers.grok import GrokProvider
+from toks.providers.claude import ClaudeProvider
+from toks.providers.openai import OpenAIProvider
+from toks.providers.gemini import GeminiProvider
+from toks.providers.grok import GrokProvider
 
 # The test payload — minimal content that every provider must accept
 PREFLIGHT_CONTENT = b"hello"
@@ -92,8 +92,8 @@ class TestConfiguredModelsPreflight:
     """
 
     def test_all_configured_providers(self):
-        from count_tokens.config import load_config, load_env_api_key
-        from count_tokens.providers import get_provider
+        from toks.config import load_config, load_env_api_key
+        from toks.providers import get_provider
 
         config = load_config()
         if config is None:

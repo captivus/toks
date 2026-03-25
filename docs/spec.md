@@ -1,4 +1,4 @@
-# count-tokens Feature Specification
+# toks Feature Specification
 
 ## Key Design Decisions
 
@@ -26,8 +26,8 @@ Developers and power users who work with LLM APIs and need to plan their context
 
 ### Acceptance Criteria
 
-- Running `count-tokens --version` prints the version and exits 0
-- Running `count-tokens` with no arguments prints usage help and exits 0
+- Running `toks --version` prints the version and exits 0
+- Running `toks` with no arguments prints usage help and exits 0
 
 ## 2. Supported Models & Providers
 
@@ -158,18 +158,18 @@ The fields we depend on per model entry:
 - `max_output_tokens` — max output length
 - `litellm_provider` — provider identifier (e.g., `anthropic`, `openai`, `vertex_ai-language-models`)
 
-The JSON is cached locally at `~/.config/count-tokens/models.json`.
+The JSON is cached locally at `~/.config/toks/models.json`.
 
-- The cache is populated on first run or during `count-tokens setup`
-- `count-tokens models` lists all known models for the configured provider(s)
-- `count-tokens models --refresh` updates the cached registry from GitHub
+- The cache is populated on first run or during `toks setup`
+- `toks models` lists all known models for the configured provider(s)
+- `toks models --refresh` updates the cached registry from GitHub
 - When a user specifies a model not in the registry, the tool errors with a helpful message suggesting `--refresh` or checking the model name
 - The registry also provides provider identification, enabling `--model` to infer which provider API to call
 
 ### Acceptance Criteria
 
-- `count-tokens models` lists models with their context windows for each configured provider
-- `count-tokens models --refresh` fetches the latest LiteLLM registry JSON and caches it locally
+- `toks models` lists models with their context windows for each configured provider
+- `toks models --refresh` fetches the latest LiteLLM registry JSON and caches it locally
 - Specifying `--model claude-sonnet-4-6` correctly identifies Anthropic as the provider
 - Specifying `--model nonexistent-model-xyz` produces a helpful error suggesting `--refresh`
 
@@ -325,26 +325,26 @@ When a file's type is not supported by the selected provider, it is skipped and 
 
 ### Installation
 
-Installs as `count-tokens` with a short alias `ct`.
+Installs as `toks` with a short alias `ct`.
 
 ### Command Syntax
 
 ```
-count-tokens <target> [options]
+toks <target> [options]
 ```
 
 Where `<target>` is a file path, directory path, or `-` for stdin.
 
 Counting tokens is the default action — no subcommand required. Non-counting operations use subcommands:
 
-- `count-tokens setup` — interactive configuration workflow (see section 9)
-- `count-tokens models` — list all known models and their context windows
+- `toks setup` — interactive configuration workflow (see section 9)
+- `toks models` — list all known models and their context windows
 
 ### Target Modes
 
-- **Single file**: `count-tokens ./main.py`
-- **Directory**: `count-tokens ./src` (recursive by default)
-- **stdin**: `cat file.py | count-tokens -` or piped input
+- **Single file**: `toks ./main.py`
+- **Directory**: `toks ./src` (recursive by default)
+- **stdin**: `cat file.py | toks -` or piped input
 
 ### Provider Selection
 
@@ -352,7 +352,7 @@ Single provider per invocation. The tool uses the configured default model for t
 
 - **No flag**: Uses the default provider and model configured during `setup`
 - **`--for <provider>`**: Specifies the provider (e.g., `--for claude`, `--for openai`, `--for gemini`, `--for grok`). Uses the configured default model for that provider.
-- **`--model <model-id>`**: Overrides to a specific model. Provider is inferred from the model name using the LiteLLM model registry. If the model is not in the registry, the tool errors with: "Model 'xyz' not found in registry. Use `--for <provider>` to specify the provider, or run `count-tokens models --refresh`."
+- **`--model <model-id>`**: Overrides to a specific model. Provider is inferred from the model name using the LiteLLM model registry. If the model is not in the registry, the tool errors with: "Model 'xyz' not found in registry. Use `--for <provider>` to specify the provider, or run `toks models --refresh`."
 - **`--for` and `--model` together**: `--for` is ignored — `--model` is more specific and wins
 
 ### Filtering Flags
@@ -377,18 +377,18 @@ Single provider per invocation. The tool uses the configured default model for t
 
 ### Acceptance Criteria
 
-- `count-tokens ./file.py --for claude` counts tokens and exits 0
-- `count-tokens ./src/ --for claude` recursively counts all files and exits 0
-- `cat file.py | count-tokens - --for claude` reads from stdin and returns a count
-- `count-tokens ./src/ --for claude --glob "*.py"` only counts Python files
-- `count-tokens ./src/ --for claude --max-size 1KB` skips files larger than 1KB
-- `count-tokens ./src/ --for claude --no-gitignore` includes files that would normally be gitignored
-- `count-tokens ./file.py --model claude-sonnet-4-6` infers provider and counts correctly
-- `count-tokens ./file.py --for claude --model gpt-4o-mini` ignores `--for` and uses OpenAI
-- `count-tokens ./file.py` with no flags uses the default provider from config
-- `count-tokens ./file.py --for claude` without a configured API key exits 1 with a helpful error
-- `count-tokens setup` launches the interactive configuration workflow
-- Both `count-tokens` and `ct` invoke the tool
+- `toks ./file.py --for claude` counts tokens and exits 0
+- `toks ./src/ --for claude` recursively counts all files and exits 0
+- `cat file.py | toks - --for claude` reads from stdin and returns a count
+- `toks ./src/ --for claude --glob "*.py"` only counts Python files
+- `toks ./src/ --for claude --max-size 1KB` skips files larger than 1KB
+- `toks ./src/ --for claude --no-gitignore` includes files that would normally be gitignored
+- `toks ./file.py --model claude-sonnet-4-6` infers provider and counts correctly
+- `toks ./file.py --for claude --model gpt-4o-mini` ignores `--for` and uses OpenAI
+- `toks ./file.py` with no flags uses the default provider from config
+- `toks ./file.py --for claude` without a configured API key exits 1 with a helpful error
+- `toks setup` launches the interactive configuration workflow
+- Both `toks` and `ct` invoke the tool
 
 ## 5. Output Format
 
@@ -474,7 +474,7 @@ Applied before any API calls are made:
 
 ### stdin
 
-When reading from stdin (`count-tokens -`), the content is assumed to be plain text. Use `--mime-type` to override (e.g., `--mime-type image/png`).
+When reading from stdin (`toks -`), the content is assumed to be plain text. Use `--mime-type` to override (e.g., `--mime-type image/png`).
 
 ### File Type Detection
 
@@ -581,20 +581,20 @@ Files that cannot be read (permissions, broken symlinks, etc.) are reported in t
 - Inaccessible files (permissions errors) are reported as skipped, not as fatal errors
 - Exit code is 0 when some files succeed
 - Exit code is 1 when no files succeed (all failed or missing API key)
-- Exit code is 2 for bad arguments (e.g., `count-tokens --invalid-flag`)
+- Exit code is 2 for bad arguments (e.g., `toks --invalid-flag`)
 
 ## 9. Configuration
 
 ### Config File Location
 
-Configuration is stored in `~/.config/count-tokens/`:
+Configuration is stored in `~/.config/toks/`:
 
 - `config.toml` — provider selections, plan tiers, default provider, default model per provider
 - `.env` — API keys (using standard env var names)
 
 ### Initial Setup Workflow
 
-A guided `count-tokens setup` command that walks the user through:
+A guided `toks setup` command that walks the user through:
 
 1. **Which providers do you use?** (multi-select: Claude, OpenAI, Gemini, Grok)
 2. **For each selected provider:**
@@ -682,7 +682,7 @@ GROK_API_KEY=xai-...
 
 ### API Key Lookup Order
 
-API keys are resolved in this order: 1) `~/.config/count-tokens/.env`, 2) `.env` in the current directory, 3) environment variables.
+API keys are resolved in this order: 1) `~/.config/toks/.env`, 2) `.env` in the current directory, 3) environment variables.
 
 ### Runtime Overrides
 
@@ -692,14 +692,14 @@ API keys are resolved in this order: 1) `~/.config/count-tokens/.env`, 2) `.env`
 
 ### Re-running Setup
 
-`count-tokens setup` can be re-run at any time to update providers, plans, or API keys. It preserves existing values as defaults so the user only needs to change what's different.
+`toks setup` can be re-run at any time to update providers, plans, or API keys. It preserves existing values as defaults so the user only needs to change what's different.
 
 ### Acceptance Criteria
 
-- `count-tokens setup` creates `~/.config/count-tokens/config.toml` and `~/.config/count-tokens/.env`
+- `toks setup` creates `~/.config/toks/config.toml` and `~/.config/toks/.env`
 - API keys entered during setup are validated with a minimal token counting call
 - Invalid API keys are rejected with a helpful error during setup
-- After setup, `count-tokens ./file.py` works without any flags (uses default provider and model)
+- After setup, `toks ./file.py` works without any flags (uses default provider and model)
 - Re-running setup preserves previously entered values as defaults
 - `config.toml` contains provider selections, plan tiers, default model, and default provider
 - `.env` contains API keys in the standard env var format
@@ -721,9 +721,9 @@ Requires Python 3.11+ (for `tomllib` in stdlib).
 ## 11. Project Structure
 
 ```
-src/count_tokens/
+src/toks/
     __init__.py
-    __main__.py          # entry point for python -m count_tokens
+    __main__.py          # entry point for python -m toks
     cli.py               # click app, command definitions, argument parsing
     config.py            # setup wizard, config.toml and .env reading/writing
     setup.py             # Setup wizard: Prompter protocol, model validation, curated models
@@ -798,9 +798,9 @@ A `tests/fixtures/` directory committed to the repo containing known test files:
 
 #### CLI Tests
 
-- `count-tokens ./file.py --for claude` exits 0 and outputs a token count
-- `count-tokens ./src/ --for claude` outputs a tree with per-file counts
-- `count-tokens - --for claude < file.py` reads from stdin
+- `toks ./file.py --for claude` exits 0 and outputs a token count
+- `toks ./src/ --for claude` outputs a tree with per-file counts
+- `toks - --for claude < file.py` reads from stdin
 - `--quiet` outputs only an integer
 - `--summary` outputs only the totals
 - `--glob "*.py"` filters correctly
@@ -835,7 +835,7 @@ A `tests/fixtures/` directory committed to the repo containing known test files:
 
 #### Configuration Tests
 
-- `count-tokens setup` creates config files in `~/.config/count-tokens/`
+- `toks setup` creates config files in `~/.config/toks/`
 - Config is read correctly on subsequent runs
 - `--for` and `--model` override config defaults
 

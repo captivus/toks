@@ -7,8 +7,8 @@ import random
 
 import httpx
 
-from count_tokens.providers.base import FileResult, TokenCountResult, TokenCountProvider, UnsupportedFileTypeError
-from count_tokens.scanner import validate_content_matches_mime
+from toks.providers.base import FileResult, TokenCountResult, TokenCountProvider, UnsupportedFileTypeError
+from toks.scanner import validate_content_matches_mime
 
 
 TRANSIENT_STATUS_CODES = {429, 500, 502, 503, 504}

@@ -1,14 +1,14 @@
 """Provider registry and lookup."""
 
-from count_tokens.providers.base import (
+from toks.providers.base import (
     TokenCountProvider,
     TokenCountResult,
     UnsupportedFileTypeError,
 )
-from count_tokens.providers.claude import ClaudeProvider
-from count_tokens.providers.openai import OpenAIProvider
-from count_tokens.providers.gemini import GeminiProvider
-from count_tokens.providers.grok import GrokProvider
+from toks.providers.claude import ClaudeProvider
+from toks.providers.openai import OpenAIProvider
+from toks.providers.gemini import GeminiProvider
+from toks.providers.grok import GrokProvider
 
 PROVIDERS: dict[str, type[TokenCountProvider]] = {
     "claude": ClaudeProvider,

@@ -7,20 +7,20 @@ from pathlib import Path
 
 import pytest
 
-from count_tokens.config import load_config, save_config, CONFIG_DIR, CONFIG_FILE, ENV_FILE, get_web_context_window
-from count_tokens.providers.base import Config, ProviderConfig
-from count_tokens.setup import gather_config, run_setup, FixedPrompter
+from toks.config import load_config, save_config, CONFIG_DIR, CONFIG_FILE, ENV_FILE, get_web_context_window
+from toks.providers.base import Config, ProviderConfig
+from toks.setup import gather_config, run_setup, FixedPrompter
 
 
 @pytest.fixture(autouse=True)
 def isolated_config(tmp_path, monkeypatch):
     """Redirect config to a temp directory for each test."""
-    test_config_dir = tmp_path / "count-tokens"
+    test_config_dir = tmp_path / "toks"
     test_config_dir.mkdir()
-    monkeypatch.setattr("count_tokens.config.CONFIG_DIR", test_config_dir)
-    monkeypatch.setattr("count_tokens.config.CONFIG_FILE", test_config_dir / "config.toml")
-    monkeypatch.setattr("count_tokens.config.ENV_FILE", test_config_dir / ".env")
-    monkeypatch.setattr("count_tokens.setup.CONFIG_FILE", test_config_dir / "config.toml")
+    monkeypatch.setattr("toks.config.CONFIG_DIR", test_config_dir)
+    monkeypatch.setattr("toks.config.CONFIG_FILE", test_config_dir / "config.toml")
+    monkeypatch.setattr("toks.config.ENV_FILE", test_config_dir / ".env")
+    monkeypatch.setattr("toks.setup.CONFIG_FILE", test_config_dir / "config.toml")
     yield test_config_dir
 
 

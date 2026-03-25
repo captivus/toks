@@ -8,9 +8,9 @@ from pathlib import Path
 import tomli_w
 from dotenv import dotenv_values
 
-from count_tokens.providers.base import Config, ProviderConfig
+from toks.providers.base import Config, ProviderConfig
 
-CONFIG_DIR = Path.home() / ".config" / "count-tokens"
+CONFIG_DIR = Path.home() / ".config" / "toks"
 CONFIG_FILE = CONFIG_DIR / "config.toml"
 ENV_FILE = CONFIG_DIR / ".env"
 
@@ -57,7 +57,7 @@ def load_config() -> Config | None:
 
     env_vars = dotenv_values(ENV_FILE) if ENV_FILE.exists() else {}
 
-    from count_tokens.providers import PROVIDER_ENV_KEYS
+    from toks.providers import PROVIDER_ENV_KEYS
 
     providers = {}
     for name, provider_data in data.get("providers", {}).items():
@@ -90,7 +90,7 @@ def save_config(*, config: Config) -> None:
     with open(CONFIG_FILE, "wb") as f:
         tomli_w.dump(toml_data, f)
 
-    from count_tokens.providers import PROVIDER_ENV_KEYS
+    from toks.providers import PROVIDER_ENV_KEYS
     lines = []
     for name, pc in config.providers.items():
         env_key = PROVIDER_ENV_KEYS.get(name, "")
@@ -100,7 +100,7 @@ def save_config(*, config: Config) -> None:
 
 
 def load_env_api_key(*, provider: str) -> str | None:
-    from count_tokens.providers import PROVIDER_ENV_KEYS
+    from toks.providers import PROVIDER_ENV_KEYS
 
     env_key = PROVIDER_ENV_KEYS.get(provider, "")
     if not env_key:

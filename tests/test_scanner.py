@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from count_tokens.scanner import detect_mime_type, is_binary_mime, parse_size, scan_files
+from toks.scanner import detect_mime_type, is_binary_mime, parse_size, scan_files
 
 FIXTURES = Path(__file__).parent / "fixtures"
 

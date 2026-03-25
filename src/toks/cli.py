@@ -10,14 +10,14 @@ import click
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn, MofNCompleteColumn
 
-from count_tokens import __version__
-from count_tokens.providers.base import FileResult
-from count_tokens.config import load_config, load_env_api_key, get_web_context_window
-from count_tokens.registry import get_registry, get_context_window, infer_provider, refresh_registry, list_models_for_provider
-from count_tokens.scanner import scan_files, detect_mime_type, parse_size
-from count_tokens.runner import run_token_counting
-from count_tokens.output import render_tree, render_quiet, render_summary
-from count_tokens.providers import get_provider, PROVIDER_ENV_KEYS
+from toks import __version__
+from toks.providers.base import FileResult
+from toks.config import load_config, load_env_api_key, get_web_context_window
+from toks.registry import get_registry, get_context_window, infer_provider, refresh_registry, list_models_for_provider
+from toks.scanner import scan_files, detect_mime_type, parse_size
+from toks.runner import run_token_counting
+from toks.output import render_tree, render_quiet, render_summary
+from toks.providers import get_provider, PROVIDER_ENV_KEYS
 
 console = Console()
 
@@ -36,17 +36,17 @@ class CountTokensGroup(click.Group):
 
 
 @click.group(cls=CountTokensGroup, invoke_without_command=True)
-@click.version_option(version=__version__, prog_name="count-tokens")
+@click.version_option(version=__version__, prog_name="toks")
 @click.pass_context
 def app(ctx):
     """Count tokens for files across LLM providers.
 
     \b
     Usage examples:
-      count-tokens file.py --for claude
-      count-tokens src/ --for gemini --glob "*.py"
-      count-tokens setup
-      count-tokens models --refresh
+      toks file.py --for claude
+      toks src/ --for gemini --glob "*.py"
+      toks setup
+      toks models --refresh
     """
     if ctx.invoked_subcommand is None:
         click.echo(ctx.get_help())
@@ -81,8 +81,8 @@ def count_command(target, for_provider, model, glob_pattern, max_size, no_gitign
 @app.command()
 def setup():
     """Interactive configuration wizard."""
-    from count_tokens.setup import run_setup
-    from count_tokens.config import CONFIG_FILE
+    from toks.setup import run_setup
+    from toks.config import CONFIG_FILE
 
     run_setup()
     console.print(f"\n[bold green]Setup complete![/bold green] Config saved to {CONFIG_FILE}")
@@ -138,7 +138,7 @@ def _run_count(
     if model:
         resolved_provider = infer_provider(model_id=model, registry=registry)
         if not resolved_provider:
-            console.print(f"[red]Model '{model}' not found in registry. Use --for <provider>, or run 'count-tokens models --refresh'.[/red]")
+            console.print(f"[red]Model '{model}' not found in registry. Use --for <provider>, or run 'toks models --refresh'.[/red]")
             sys.exit(1)
         resolved_model = model
     elif for_provider:
@@ -151,7 +151,7 @@ def _run_count(
             resolved_model = config.providers[resolved_provider].model
 
     if not resolved_provider:
-        console.print("[red]No provider specified. Use --for <provider>, --model <model>, or run 'count-tokens setup'.[/red]")
+        console.print("[red]No provider specified. Use --for <provider>, --model <model>, or run 'toks setup'.[/red]")
         sys.exit(1)
 
     if not resolved_model:
@@ -161,7 +161,7 @@ def _run_count(
     api_key = load_env_api_key(provider=resolved_provider)
     if not api_key:
         env_key_name = PROVIDER_ENV_KEYS.get(resolved_provider, "")
-        console.print(f"[red]{env_key_name} not configured. Run 'count-tokens setup' or set it in your .env file.[/red]")
+        console.print(f"[red]{env_key_name} not configured. Run 'toks setup' or set it in your .env file.[/red]")
         sys.exit(1)
 
     provider = get_provider(name=resolved_provider, api_key=api_key)
@@ -171,7 +171,7 @@ def _run_count(
         asyncio.run(provider.count_tokens(content=b"hello", mime_type="text/plain", model=resolved_model))
     except Exception as exc:
         console.print(f"[red]Preflight check failed for {resolved_provider}/{resolved_model}: {exc}[/red]")
-        console.print("[red]Check that the model name is valid. Run 'count-tokens models --refresh' to update the registry.[/red]")
+        console.print("[red]Check that the model name is valid. Run 'toks models --refresh' to update the registry.[/red]")
         sys.exit(1)
 
     max_size_bytes = parse_size(size_str=max_size)

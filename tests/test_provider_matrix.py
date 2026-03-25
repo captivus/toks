@@ -12,11 +12,11 @@ from pathlib import Path
 
 import pytest
 
-from count_tokens.providers.base import UnsupportedFileTypeError
-from count_tokens.providers.claude import ClaudeProvider
-from count_tokens.providers.openai import OpenAIProvider
-from count_tokens.providers.gemini import GeminiProvider
-from count_tokens.providers.grok import GrokProvider
+from toks.providers.base import UnsupportedFileTypeError
+from toks.providers.claude import ClaudeProvider
+from toks.providers.openai import OpenAIProvider
+from toks.providers.gemini import GeminiProvider
+from toks.providers.grok import GrokProvider
 
 FIXTURES = Path(__file__).parent / "fixtures"
 

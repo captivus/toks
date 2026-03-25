@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from typing import Protocol
 
-from count_tokens.config import load_config, save_config, CONFIG_FILE
-from count_tokens.providers.base import Config, ProviderConfig
-from count_tokens.providers import PROVIDER_ENV_KEYS
+from toks.config import load_config, save_config, CONFIG_FILE
+from toks.providers.base import Config, ProviderConfig
+from toks.providers import PROVIDER_ENV_KEYS
 
 
 PLAN_OPTIONS: dict[str, list[tuple[str, str]]] = {
@@ -159,7 +159,7 @@ def _select_model(*, prompter: Prompter, provider_name: str, message: str, exist
 def _validate_api_key(*, provider_name: str, api_key: str) -> str | None:
     """Validate an API key works by making a test call with a known-good model. Returns None on success, error on failure."""
     import asyncio
-    from count_tokens.providers import get_provider
+    from toks.providers import get_provider
     model = DEFAULT_MODELS.get(provider_name, "")
     try:
         provider = get_provider(name=provider_name, api_key=api_key)
@@ -172,7 +172,7 @@ def _validate_api_key(*, provider_name: str, api_key: str) -> str | None:
 def _validate_model(*, provider_name: str, api_key: str, model: str) -> str | None:
     """Validate a model works by making a test API call. Returns None on success, error on failure."""
     import asyncio
-    from count_tokens.providers import get_provider
+    from toks.providers import get_provider
     try:
         provider = get_provider(name=provider_name, api_key=api_key)
         asyncio.run(provider.count_tokens(content=b"hello", mime_type="text/plain", model=model))

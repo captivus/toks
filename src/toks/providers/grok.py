@@ -14,7 +14,7 @@ import struct
 
 import httpx
 
-from count_tokens.providers.base import TokenCountResult, UnsupportedFileTypeError
+from toks.providers.base import TokenCountResult, UnsupportedFileTypeError
 
 NON_TEXT_SUPPORTED = {"application/json", "application/xml"}
 IMAGE_SUPPORTED = {"image/jpeg", "image/png"}

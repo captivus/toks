@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 
 load_dotenv()
-load_dotenv(Path.home() / ".config" / "count-tokens" / ".env")
+load_dotenv(Path.home() / ".config" / "toks" / ".env")
 
 
 def has_api_key(*, env_var: str) -> bool:

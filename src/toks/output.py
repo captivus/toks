@@ -9,7 +9,7 @@ from rich.console import Console
 from rich.table import Table
 from rich.tree import Tree
 
-from count_tokens.providers.base import FileResult
+from toks.providers.base import FileResult
 
 
 def format_tokens(*, count: int) -> str:
