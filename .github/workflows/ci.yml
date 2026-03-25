@@ -26,4 +26,4 @@ jobs:
         run: uv sync
 
       - name: Run tests (non-API)
-        run: uv run pytest tests/test_scanner.py tests/test_config.py tests/test_registry.py tests/test_cli.py -x
+        run: uv run python -m pytest -m "not claude and not openai and not gemini and not grok" -x
