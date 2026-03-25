@@ -27,7 +27,7 @@ Developers and power users who work with LLM APIs and need to plan their context
 ### Acceptance Criteria
 
 - Running `count-tokens --version` prints the version and exits 0
-- Running `count-tokens` with no arguments prints usage help and exits 2
+- Running `count-tokens` with no arguments prints usage help and exits 0
 
 ## 2. Supported Models & Providers
 
@@ -157,8 +157,6 @@ The fields we depend on per model entry:
 - `max_input_tokens` — context window size
 - `max_output_tokens` — max output length
 - `litellm_provider` — provider identifier (e.g., `anthropic`, `openai`, `vertex_ai-language-models`)
-- `supports_vision` — whether the model accepts images
-- `supports_pdf_input` — whether the model accepts PDFs
 
 The JSON is cached locally at `~/.config/count-tokens/models.json`.
 
@@ -250,10 +248,11 @@ The tool detects each file's MIME type before passing it to a provider. Each pro
 | File Type | Claude | OpenAI | Gemini | Grok |
 |-----------|--------|--------|--------|------|
 | Text/code | `messages[].content[]` with `type: "text"` | `input` as string | `contents[].parts[]` with `text` field | `text` field (string) |
-| Image (JPEG, PNG, GIF, WebP) | `type: "image"` with base64 `source` | `type: "input_image"` with base64 data URL | `inline_data` with `mime_type` + base64 | Not supported |
+| Image (JPEG, PNG) | `type: "image"` with base64 `source` | `type: "input_image"` with base64 data URL | `inline_data` with `mime_type` + base64 | Local calculation (tiling formula) |
+| Image (GIF, WebP) | `type: "image"` with base64 `source` | `type: "input_image"` with base64 data URL | `inline_data` with `mime_type` + base64 | Not supported |
 | Image (HEIC, BMP, TIFF, SVG) | Not supported | Not supported | `inline_data` with `mime_type` + base64 | Not supported |
 | PDF | `type: "document"` with base64 `source` | File input (base64) | `inline_data` with `mime_type` + base64 | Not supported |
-| Office docs (docx, xlsx, pptx) | Not supported | File input (base64) | `inline_data` with `mime_type` + base64 | Not supported |
+| Office docs (docx, xlsx, pptx) | Not supported | File input (base64) | Not supported | Not supported |
 
 MIME type detection and file reading are handled by the tool's core. Content packaging (building the right JSON structure, encoding to base64 where needed, etc.) is handled by each provider implementation.
 
@@ -292,10 +291,12 @@ All endpoints are called via `httpx` (async). No provider SDKs are used.
 
 - **Endpoint**: `POST https://api.x.ai/v1/tokenize-text`
 - **Auth**: `Authorization: Bearer` header
-- **Input**: JSON body with `model` and `text` (string). Plain text only — no image, PDF, or binary file support.
+- **Input**: JSON body with `model` and `text` (string). Text only — no multimodal tokenization endpoint exists.
 - **Response**: `{ "token_ids": [{ "token_id": <int>, "string_token": <str>, "token_bytes": [<int>...] }, ...] }`. Count is `len(token_ids)`.
 - **Rate limits**: Not published; tier-based, visible in xAI Console.
-- **Caveat**: Text-only — no image or document tokenization. Explicitly underestimates actual usage because "inference endpoints automatically add pre-defined tokens."
+- **Caveat**: Explicitly underestimates actual usage because "inference endpoints automatically add pre-defined tokens."
+- **Image token calculation**: Grok supports images (JPEG, PNG) in the chat/responses API, but the tokenize endpoint does not. However, xAI documents a deterministic tiling formula for image tokens ([source](https://docs.x.ai/docs/key-information/consumption-and-rate-limits)): images are broken into 448x448 pixel tiles, each tile consumes 256 tokens, plus one extra tile is always added. Formula: `(number_of_tiles + 1) x 256`. Maximum: 6 tiles (1,792 tokens). This tool calculates image tokens locally using this formula — no API call needed.
+- **PDF limitation**: PDFs are handled by xAI's server-side `attachment_search` tool via the Files API, not through tokenization. There is no way to pre-count tokens for PDFs ([source](https://docs.x.ai/developers/files)). PDFs remain unsupported for Grok token counting.
 
 ### Unsupported File Type Handling
 
@@ -313,7 +314,7 @@ When a file's type is not supported by the selected provider, it is skipped and 
 - Counting the same text file via Gemini returns a positive integer token count and a modality breakdown
 - Counting the same text file via Grok returns a positive integer token count
 - Counting a JPEG image via Claude returns a positive integer token count
-- Counting a JPEG image via Grok reports the file as unsupported and skips it
+- Counting a JPEG image via Grok returns a positive token count calculated from image dimensions
 - Counting a PDF via Claude returns a positive integer token count
 - Counting a docx file via Claude reports it as unsupported
 - Counting a docx file via OpenAI returns a positive integer token count
@@ -383,7 +384,7 @@ Single provider per invocation. The tool uses the configured default model for t
 - `count-tokens ./src/ --for claude --max-size 1KB` skips files larger than 1KB
 - `count-tokens ./src/ --for claude --no-gitignore` includes files that would normally be gitignored
 - `count-tokens ./file.py --model claude-sonnet-4-6` infers provider and counts correctly
-- `count-tokens ./file.py --for claude --model gpt-5.4` ignores `--for` and uses OpenAI
+- `count-tokens ./file.py --for claude --model gpt-4o-mini` ignores `--for` and uses OpenAI
 - `count-tokens ./file.py` with no flags uses the default provider from config
 - `count-tokens ./file.py --for claude` without a configured API key exits 1 with a helpful error
 - `count-tokens setup` launches the interactive configuration workflow
@@ -486,6 +487,8 @@ The tool detects each file's MIME type using stdlib `mimetypes` (extension-based
 - **Binary files** (anything not matching the above categories): Excluded by default. `--include-binary` overrides this, though most providers will not be able to tokenize them
 - **Unknown MIME type** (extension not recognized by `mimetypes`): Defaults to `text/plain`. Common unrecognized extensions include `.tsx`, `.vue`, `.svelte`, `.rs`, etc.
 
+**Magic byte validation**: Before sending binary files (images, PDFs) to the API, the tool validates that the file content starts with the expected magic bytes for its MIME type (e.g., JPEG starts with FF D8 FF, PNG starts with 89 50 4E 47, PDF starts with %PDF). Files that fail this check are skipped.
+
 ### Unsupported File Handling
 
 When a file's type is not supported by the selected provider, it is skipped and reported in the "Skipped files" section of the output.
@@ -513,7 +516,7 @@ When a file's type is not supported by the selected provider, it is skipped and 
 - Uses `asyncio` with `asyncio.Semaphore` for concurrency control
 - Default: 10 concurrent API requests
 - `--concurrency <n>` flag to override
-- On HTTP 429 (rate limit exceeded), exponential backoff: base delay 1 second, 2x multiplier, max delay 60 seconds, random jitter 0-100% of calculated delay. `Retry-After` header overrides the calculated delay when present.
+- On HTTP 429 (rate limit exceeded), exponential backoff: base delay 1 second, 2x multiplier, max delay 60 seconds, random jitter 50-150% of calculated delay (ensures non-zero delay). `Retry-After` header overrides the calculated delay when present.
 - Circuit breaker: abort after 10 consecutive failures from a provider, report whatever results were collected
 
 ### Progress Indication
@@ -598,8 +601,8 @@ A guided `count-tokens setup` command that walks the user through:
    - Enter your API key (validated by making a minimal token counting call — count tokens for the string `hello` — to confirm both the key and endpoint access)
    - What plan/tier are you on? (simple list per provider — see below)
    - Do you have access to the coding agent? (yes/no)
-   - If yes: Which model does your coding agent use? (with sensible defaults: `claude-opus-4-6`, `gpt-5.4`, `gemini-3-flash`)
-   - Which model do you primarily use for the API? (with sensible defaults: `claude-sonnet-4-6`, `gpt-5.4`, `gemini-3-flash`, `grok-4.1`)
+   - If yes: Which model does your coding agent use? (with sensible defaults: `claude-opus-4-6`, `gpt-4o-mini`, `gemini-2.5-flash`)
+   - Which model do you primarily use for the API? (with sensible defaults: `claude-sonnet-4-6`, `gpt-4o-mini`, `gemini-2.5-flash`, `grok-3`)
 3. **Set a default provider** for when no `--for` flag is specified
 
 The plan/tier question determines the web chat context window for the "Web" column in output. The coding agent question determines whether the "Agent" column shows a value or "N/A". The model question determines which model is used for API calls and the "API" column context window.
@@ -656,14 +659,14 @@ plan = "max_20x"
 has_coding_agent = true
 
 [providers.openai]
-model = "gpt-5.4"
-agent_model = "gpt-5.4"
+model = "gpt-4o-mini"
+agent_model = "gpt-4o-mini"
 plan = "plus"
 has_coding_agent = true
 
 [providers.gemini]
-model = "gemini-3-flash"
-agent_model = "gemini-3-flash"
+model = "gemini-2.5-flash"
+agent_model = "gemini-2.5-flash"
 plan = "ai_pro"
 has_coding_agent = true
 ```
@@ -673,9 +676,13 @@ has_coding_agent = true
 ```
 ANTHROPIC_API_KEY=sk-ant-...
 OPENAI_API_KEY=sk-...
-GOOGLE_API_KEY=AI...
-XAI_API_KEY=xai-...
+GEMINI_API_KEY=AI...
+GROK_API_KEY=xai-...
 ```
+
+### API Key Lookup Order
+
+API keys are resolved in this order: 1) `~/.config/count-tokens/.env`, 2) `.env` in the current directory, 3) environment variables.
 
 ### Runtime Overrides
 
@@ -703,7 +710,7 @@ XAI_API_KEY=xai-...
 Requires Python 3.11+ (for `tomllib` in stdlib).
 
 - **HTTP client**: `httpx` (async, for all provider API calls — no provider SDKs)
-- **CLI framework**: `typer`
+- **CLI framework**: `click`
 - **Progress bar / output rendering**: `rich` (also handles tree rendering and styled terminal output)
 - **Interactive prompts**: `questionary` (multi-select, single-select, password input for the setup wizard)
 - **MIME type detection**: stdlib `mimetypes` (extension-based, no system dependency required)
@@ -717,8 +724,9 @@ Requires Python 3.11+ (for `tomllib` in stdlib).
 src/count_tokens/
     __init__.py
     __main__.py          # entry point for python -m count_tokens
-    cli.py               # typer app, command definitions, argument parsing
+    cli.py               # click app, command definitions, argument parsing
     config.py            # setup wizard, config.toml and .env reading/writing
+    setup.py             # Setup wizard: Prompter protocol, model validation, curated models
     registry.py          # LiteLLM JSON fetching, caching, model lookup
     scanner.py           # file discovery, gitignore, filtering, MIME detection
     runner.py            # async orchestrator: concurrency, retries, backoff, circuit breaker
@@ -743,9 +751,10 @@ tests/
         tree/            # nested directory structure with .gitignore for traversal tests
     test_providers.py
     test_cli.py
-    test_output.py
+    test_provider_matrix.py
+    test_preflight.py
+    test_e2e_pipeline.py
     test_scanner.py
-    test_runner.py
     test_config.py
     test_registry.py
 ```

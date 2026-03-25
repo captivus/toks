@@ -24,8 +24,8 @@ async def count_file_tokens(
     try:
         content = file_result.path.read_bytes()
     except OSError as exc:
-        file_result.status = "failed"
-        file_result.error = str(exc)
+        file_result.status = "skipped"
+        file_result.skip_reason = f"Cannot read file: {exc}"
         return file_result
 
     if not content:

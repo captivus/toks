@@ -156,8 +156,21 @@ def _select_model(*, prompter: Prompter, provider_name: str, message: str, exist
     return selected
 
 
+def _validate_api_key(*, provider_name: str, api_key: str) -> str | None:
+    """Validate an API key works by making a test call with a known-good model. Returns None on success, error on failure."""
+    import asyncio
+    from count_tokens.providers import get_provider
+    model = DEFAULT_MODELS.get(provider_name, "")
+    try:
+        provider = get_provider(name=provider_name, api_key=api_key)
+        asyncio.run(provider.count_tokens(content=b"hello", mime_type="text/plain", model=model))
+        return None
+    except Exception as exc:
+        return str(exc)
+
+
 def _validate_model(*, provider_name: str, api_key: str, model: str) -> str | None:
-    """Validate a model works by making a test API call. Returns None on success, error message on failure."""
+    """Validate a model works by making a test API call. Returns None on success, error on failure."""
     import asyncio
     from count_tokens.providers import get_provider
     try:
@@ -186,10 +199,24 @@ def gather_config(*, prompter: Prompter, existing: Config | None = None, skip_va
         existing_pc = existing.providers.get(name) if existing else None
         env_key = PROVIDER_ENV_KEYS.get(name, "")
 
-        api_key = prompter.password(
-            message=f"Enter your {name} API key ({env_key}):",
-            default=existing_pc.api_key if existing_pc else "",
-        )
+        for attempt in range(3):
+            api_key = prompter.password(
+                message=f"Enter your {name} API key ({env_key}):",
+                default=existing_pc.api_key if existing_pc else "",
+            )
+            if skip_validation or not api_key:
+                break
+            error = _validate_api_key(provider_name=name, api_key=api_key)
+            if error is None:
+                break
+            from rich.console import Console
+            Console().print(f"[red]API key validation failed: {error}[/red]")
+            if attempt == 2:
+                Console().print(f"[red]Skipping {name} after 3 failed attempts.[/red]")
+                api_key = ""
+
+        if not api_key and not skip_validation:
+            continue
 
         plan_labels = [p[0] for p in PLAN_OPTIONS[name]]
         plan_keys = [p[1] for p in PLAN_OPTIONS[name]]
@@ -223,10 +250,21 @@ def gather_config(*, prompter: Prompter, existing: Config | None = None, skip_va
         )
 
         if not skip_validation and api_key:
-            error = _validate_model(provider_name=name, api_key=api_key, model=api_model)
-            if error:
+            for attempt in range(3):
+                error = _validate_model(provider_name=name, api_key=api_key, model=api_model)
+                if error is None:
+                    break
                 from rich.console import Console
-                Console().print(f"[yellow]Warning: model '{api_model}' validation failed: {error}[/yellow]")
+                Console().print(f"[red]Model '{api_model}' validation failed: {error}[/red]")
+                if attempt < 2:
+                    api_model = _select_model(
+                        prompter=prompter, provider_name=name,
+                        message=f"Choose a different {name} model:",
+                        existing=None,
+                        default=DEFAULT_MODELS.get(name, ""),
+                    )
+                else:
+                    Console().print(f"[yellow]Saving '{api_model}' despite validation failure.[/yellow]")
 
         providers[name] = ProviderConfig(
             api_key=api_key,

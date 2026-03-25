@@ -185,13 +185,13 @@ class TestGrokMatrix:
         result = _count(grok, *PYTHON_FILE, self.MODEL)
         assert result.total_tokens > 0
 
-    def test_png_unsupported(self, grok):
-        with pytest.raises(UnsupportedFileTypeError):
-            _count(grok, *PNG_FILE, self.MODEL)
+    def test_png(self, grok):
+        result = _count(grok, *PNG_FILE, self.MODEL)
+        assert result.total_tokens > 0
 
-    def test_jpeg_unsupported(self, grok):
-        with pytest.raises(UnsupportedFileTypeError):
-            _count(grok, *JPEG_FILE, self.MODEL)
+    def test_jpeg(self, grok):
+        result = _count(grok, *JPEG_FILE, self.MODEL)
+        assert result.total_tokens > 0
 
     def test_pdf_unsupported(self, grok):
         with pytest.raises(UnsupportedFileTypeError):

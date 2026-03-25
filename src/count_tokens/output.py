@@ -98,28 +98,36 @@ def render_tree(
 
     tree_data = build_tree_structure(results=successful, base_path=base_path)
 
-    def add_entries(*, node: dict, prefix: str = "", depth: int = 0) -> None:
+    def add_entries(*, node: dict, prefix: str = "", is_root: bool = True) -> None:
         dirs = sorted(node["children"].keys())
         files = sorted(node["files"], key=lambda f: f.path.name)
-        items = [(True, d) for d in dirs] + [(False, f) for f in files]
+        items: list[tuple[bool, object]] = [(True, d) for d in dirs] + [(False, f) for f in files]
 
-        for is_dir, item in items:
+        for idx, (is_dir, item) in enumerate(items):
+            is_last = idx == len(items) - 1
+            if is_root:
+                connector = ""
+                child_prefix = ""
+            else:
+                connector = "└── " if is_last else "├── "
+                child_prefix = prefix + ("    " if is_last else "│   ")
+
             if is_dir:
                 dir_node = node["children"][item]
                 dir_tokens = dir_node["tokens"]
                 table.add_row(
-                    f"{'  ' * depth}{item}/",
+                    f"{prefix}{connector}{item}/",
                     f"[{format_tokens(count=dir_tokens)}]",
                     format_pct(tokens=dir_tokens, window=agent_window),
                     format_pct(tokens=dir_tokens, window=web_window),
                     format_pct(tokens=dir_tokens, window=api_window),
                 )
-                add_entries(node=dir_node, prefix=f"{prefix}{item}/", depth=depth + 1)
+                add_entries(node=dir_node, prefix=child_prefix, is_root=False)
             else:
                 fr = item
                 tokens = fr.token_count.total_tokens
                 table.add_row(
-                    f"{'  ' * depth}{fr.path.name}",
+                    f"{prefix}{connector}{fr.path.name}",
                     f"{format_tokens(count=tokens)}",
                     format_pct(tokens=tokens, window=agent_window),
                     format_pct(tokens=tokens, window=web_window),
