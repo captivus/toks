@@ -361,6 +361,7 @@ Single provider per invocation. The tool uses the configured default model for t
 - **`--max-size <size>`**: Exclude files larger than the given size (e.g., `--max-size 10MB`). Accepts KB, MB, GB (base 10). Default: 50MB.
 - **`--no-gitignore`**: Include files that would normally be skipped by `.gitignore` rules
 - **`--include-binary`**: Include binary files (excluded by default)
+- **`--depth <n>`**: Limit directory recursion depth (e.g., `--depth 0` counts only files in the target directory, `--depth 1` includes one level of subdirectories). Omitting the flag recurses without limit.
 
 ### Behavior Flags
 
@@ -388,6 +389,8 @@ Single provider per invocation. The tool uses the configured default model for t
 - `toks ./file.py` with no flags uses the default provider from config
 - `toks ./file.py --for claude` without a configured API key exits 1 with a helpful error
 - `toks setup` launches the interactive configuration workflow
+- `toks ./src/ --for claude --depth 0` only counts files directly in `./src/`
+- `toks ./src/ --for claude --depth 1` counts files in `./src/` and one level of subdirectories
 - Both `toks` and `ct` invoke the tool
 
 ## 5. Output Format
@@ -852,10 +855,6 @@ Enables automatic file format conversion for unsupported types. For example, con
 Enables heuristic-based token counts where the provider's API cannot count a file type at all. For example, estimating Grok image tokens based on image dimensions using xAI's documented formula (256-1,792 tokens depending on resolution). Estimated counts would be clearly marked in the output.
 
 **Rationale for deferral**: The heuristic ranges (e.g., Grok's 256-1,792 tokens for images) are imprecise enough to be misleading without clear communication to the user about the uncertainty.
-
-### `--depth` Flag
-
-Limits directory recursion depth (e.g., `--depth 1` only counts files in the immediate directory).
 
 ## 14. Future Considerations
 

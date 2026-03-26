@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Added
+
+- `--depth` flag to limit directory recursion depth (0 = target dir only, 1 = one level down, etc.)
+
+### Changed
+
+- Version is now managed in a single place (`src/toks/__init__.py`) via hatchling dynamic versioning
+
 ## [0.1.0] - 2026-03-24
 
 ### Added
