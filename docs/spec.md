@@ -846,7 +846,36 @@ A `tests/fixtures/` directory committed to the repo containing known test files:
 - Config is read correctly on subsequent runs
 - `--for` and `--model` override config defaults
 
-## 13. Deferred to v1.1
+## 13. Release Process
+
+### Versioning
+
+The project uses [semantic versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`):
+
+- **MAJOR**: Breaking changes that require users to change how they use the tool
+- **MINOR**: New features that don't break existing usage
+- **PATCH**: Bug fixes
+
+The version is maintained in a single place: `src/toks/__init__.py` (`__version__`). The build system (hatchling) reads it dynamically via `[tool.hatch.version]` in `pyproject.toml` — there is no version string in `pyproject.toml` itself.
+
+### Release Steps
+
+1. Bump `__version__` in `src/toks/__init__.py`
+2. Update `CHANGELOG.md`: rename the `[Unreleased]` section to `[X.Y.Z] - YYYY-MM-DD` and add a fresh empty `[Unreleased]` above it
+3. Commit and push to master
+4. Create a GitHub release tagged `vX.Y.Z` (e.g., `gh release create v0.3.0 --title "v0.3.0" --notes "..."`)
+5. The `publish.yml` workflow triggers automatically on release, runs `uv build`, and publishes to PyPI via trusted publishing (OIDC — no API token required)
+
+### Changelog Convention
+
+The changelog follows [Keep a Changelog](https://keepachangelog.com/).
+
+- Every user-facing change (new feature, bug fix, behavioral change) must be recorded in `CHANGELOG.md` under the `[Unreleased]` section before or alongside the commit that introduces it
+- Use the standard categories: `Added`, `Changed`, `Fixed`, `Removed`
+- At release time, rename `[Unreleased]` to the version and date, then add a fresh empty `[Unreleased]` section above it
+- The spec (`docs/spec.md`) should also be updated to reflect any changes to documented behavior, CLI options, or output format
+
+## 14. Deferred
 
 ### `--convert` Flag
 
@@ -860,7 +889,7 @@ Enables heuristic-based token counts where the provider's API cannot count a fil
 
 **Rationale for deferral**: The heuristic ranges (e.g., Grok's 256-1,792 tokens for images) are imprecise enough to be misleading without clear communication to the user about the uncertainty.
 
-## 14. Future Considerations
+## 15. Future Considerations
 
 - Additional model/provider support
 - Result caching — cache token counts for unchanged files (keyed by file modification time and provider/model) to avoid redundant API calls on repeated runs
