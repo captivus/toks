@@ -92,6 +92,10 @@ Three percentage columns show context window usage for each provider's interface
 
 All token counting is done via each provider's REST API. No local tokenizer libraries are needed.
 
+## File Handling
+
+When scanning directories, toks respects `.gitignore` rules by default — files matching gitignore patterns are skipped. Nested `.gitignore` files are also respected. Use `--no-gitignore` to include all files regardless. Binary files are excluded by default (`--include-binary` to override), and files over 50MB are skipped (`--max-size` to adjust).
+
 ## Configuration
 
 Config files live in `~/.config/toks/`:
