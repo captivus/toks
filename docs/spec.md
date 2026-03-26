@@ -414,6 +414,8 @@ Single provider per run. Three columns show context window percentage for each o
     ├── test_main.py               890 tokens    0.4%   0.4%    0.1%
     └── test_helpers.py            614 tokens    0.3%   0.3%    0.1%
 
+2 directories, 5 files
+
 Total: 4,812 tokens
   Agent (200K):   2.4%
   Web (200K):     2.4%
@@ -450,6 +452,7 @@ Skipped (3 files):
 
 - Default output shows a tree with token counts and three percentage columns (Agent, Web, API)
 - Directory subtotals are shown in brackets
+- A directory and file count is shown between the tree and the totals
 - Summary at the bottom shows totals per mode with context window sizes
 - `--quiet` outputs only the integer token count, no tree, no progress
 - `--summary` outputs only the totals per mode, no tree
@@ -462,6 +465,7 @@ Skipped (3 files):
 ### Directory Traversal
 
 - Recursive by default when a directory is given as the target
+- The `.git` directory is always excluded from traversal
 - Does not follow symlinks into directories (avoids infinite loops). Symlinked files are still counted.
 - Respects `.gitignore` rules by default: walks up from the target directory looking for a `.git` directory to find the repo root, then applies all nested `.gitignore` files from root down (matching git's behavior). If no `.git` directory is found, no `.gitignore` rules are applied. Does not include global gitignore (`~/.config/git/ignore`).
 - `--no-gitignore` flag disables this and includes all files

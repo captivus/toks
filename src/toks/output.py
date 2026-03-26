@@ -137,6 +137,17 @@ def render_tree(
     add_entries(node=tree_data)
     console.print(table)
 
+    def count_dirs(*, node: dict) -> int:
+        total = len(node["children"])
+        for child in node["children"].values():
+            total += count_dirs(node=child)
+        return total
+
+    num_dirs = count_dirs(node=tree_data)
+    num_files = len(successful)
+    console.print()
+    console.print(f"{num_dirs} directories, {num_files} files")
+
     console.print()
     console.print(f"Total: {format_tokens(count=total_tokens)} tokens")
     console.print(f"  Agent ({format_window_size(window=agent_window)}):  {format_pct(tokens=total_tokens, window=agent_window)}")

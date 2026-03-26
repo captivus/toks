@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-03-26
+
+### Added
+
+- Directory and file count displayed between the tree and token totals
+
 ## [0.2.1] - 2026-03-26
 
 ### Fixed
