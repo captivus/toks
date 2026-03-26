@@ -92,8 +92,13 @@ def scan_files(
     max_size: int = 50_000_000,
     no_gitignore: bool = False,
     include_binary: bool = False,
+    max_depth: int | None = None,
 ) -> list[tuple[Path, str, int]]:
-    """Scan a directory for files, returning (path, mime_type, file_size) tuples."""
+    """Scan a directory for files, returning (path, mime_type, file_size) tuples.
+
+    max_depth controls recursion: 0 = only files in target dir, 1 = one level of
+    subdirectories, etc. None = unlimited.
+    """
     target = target.resolve()
     if not target.is_dir():
         raise ValueError(f"Not a directory: {target}")
@@ -110,7 +115,11 @@ def scan_files(
     for dirpath, dirnames, filenames in os.walk(target, followlinks=False):
         dirpath_path = Path(dirpath)
 
-        dirnames[:] = [d for d in dirnames if not Path(dirpath_path / d).is_symlink()]
+        current_depth = len(dirpath_path.relative_to(target).parts)
+        if max_depth is not None and current_depth >= max_depth:
+            dirnames.clear()
+        else:
+            dirnames[:] = [d for d in dirnames if not Path(dirpath_path / d).is_symlink()]
 
         for filename in sorted(filenames):
             file_path = dirpath_path / filename

@@ -66,15 +66,16 @@ def app(ctx):
 @click.option("--quiet", "-q", is_flag=True, help="Output only total token count.")
 @click.option("--summary", is_flag=True, help="Output only totals, no tree.")
 @click.option("--no-progress", is_flag=True, help="Suppress progress bar.")
+@click.option("--depth", type=int, default=None, help="Limit directory recursion depth (0 = target dir only).")
 def count_command(target, for_provider, model, glob_pattern, max_size, no_gitignore,
-                  include_binary, concurrency, retries, mime_type, quiet, summary, no_progress):
+                  include_binary, concurrency, retries, mime_type, quiet, summary, no_progress, depth):
     """Count tokens for a file or directory."""
     _run_count(
         target=target, for_provider=for_provider, model=model,
         glob_pattern=glob_pattern, max_size=max_size, no_gitignore=no_gitignore,
         include_binary=include_binary, concurrency=concurrency, retries=retries,
         mime_type_override=mime_type, quiet=quiet, summary=summary,
-        no_progress=no_progress,
+        no_progress=no_progress, max_depth=depth,
     )
 
 
@@ -128,6 +129,7 @@ def _run_count(
     quiet: bool,
     summary: bool,
     no_progress: bool,
+    max_depth: int | None = None,
 ) -> None:
     config = load_config()
     registry = get_registry()
@@ -205,6 +207,7 @@ def _run_count(
             scanned = scan_files(
                 target=target_path, glob_pattern=glob_pattern, max_size=max_size_bytes,
                 no_gitignore=no_gitignore, include_binary=include_binary,
+                max_depth=max_depth,
             )
             if not scanned:
                 console.print("No files matched")
