@@ -1,6 +1,6 @@
 [project]
 name = "toks"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Count tokens for files across LLM providers from the command line"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -49,6 +49,9 @@ markers = [
     "gemini: tests requiring Gemini API key",
     "grok: tests requiring xAI API key",
 ]
+
+[tool.hatch.version]
+path = "src/toks/__init__.py"
 
 [build-system]
 requires = ["hatchling"]
