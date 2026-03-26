@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-03-26
+
+### Fixed
+
+- Exclude `.git` directory from file scanning (was being traversed and sent to provider APIs)
+
 ## [0.2.0] - 2026-03-25
 
 ### Added

@@ -115,6 +115,8 @@ def scan_files(
     for dirpath, dirnames, filenames in os.walk(target, followlinks=False):
         dirpath_path = Path(dirpath)
 
+        dirnames[:] = [d for d in dirnames if d != ".git"]
+
         current_depth = len(dirpath_path.relative_to(target).parts)
         if max_depth is not None and current_depth >= max_depth:
             dirnames.clear()
