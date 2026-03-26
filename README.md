@@ -119,6 +119,7 @@ toks models --refresh      # List known models / refresh registry
 | `--model <model>` | Specific model (provider inferred from registry) |
 | `--glob <pattern>` | Filter files by glob pattern |
 | `--max-size <size>` | Exclude files larger than size (default: 50MB) |
+| `--depth <n>` | Limit directory recursion depth (0 = target dir only) |
 | `-q` / `--quiet` | Output only the total token count |
 | `--summary` | Totals without the tree |
 | `--no-progress` | Suppress progress bar |

@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-03-25
+
 ### Added
 
 - `--depth` flag to limit directory recursion depth (0 = target dir only, 1 = one level down, etc.)

@@ -45,8 +45,25 @@ def app(ctx):
     Usage examples:
       toks file.py --for claude
       toks src/ --for gemini --glob "*.py"
-      toks setup
-      toks models --refresh
+      toks src/ --for claude --depth 0
+      toks README.md --for claude -q
+      cat file.py | toks - --for claude
+
+    \b
+    Token counting options:
+      --for <provider>      Provider (claude, openai, gemini, grok)
+      --model <model>       Specific model (provider inferred)
+      --glob <pattern>      Filter files by glob pattern
+      --max-size <size>     Exclude files over size (default: 50MB)
+      --depth <n>           Limit directory recursion depth
+      --no-gitignore        Include gitignored files
+      --include-binary      Include binary files
+      --concurrency <n>     Concurrent API requests (default: 10)
+      --retries <n>         Retries for transient errors (default: 3)
+      --mime-type <type>    Override MIME type (for stdin)
+      -q, --quiet           Output only total token count
+      --summary             Output only totals, no tree
+      --no-progress         Suppress progress bar
     """
     if ctx.invoked_subcommand is None:
         click.echo(ctx.get_help())
