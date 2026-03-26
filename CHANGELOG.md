@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-03-26
+
+### Changed
+
+- Updated README copy and formatting
+- Documented release process and changelog conventions in spec
+
 ## [0.3.0] - 2026-03-26
 
 ### Added
