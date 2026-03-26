@@ -1,4 +1,4 @@
-# toks
+# tōks
 
 [![PyPI version](https://img.shields.io/pypi/v/toks)](https://pypi.org/project/toks/)
 [![Python versions](https://img.shields.io/pypi/pyversions/toks)](https://pypi.org/project/toks/)
@@ -7,21 +7,22 @@
 [![CI](https://img.shields.io/github/actions/workflow/status/captivus/toks/ci.yml?branch=master&label=CI)](https://github.com/captivus/toks/actions)
 [![Downloads](https://img.shields.io/pypi/dm/toks?cacheSeconds=3600)](https://pypi.org/project/toks/)
 
-Count tokens for files and directories across LLM providers. See how much of a model's context window your content will consume before you spend the tokens.
+**tōks** ("tokes" as in "tokens") counts tokens for files and directories across LLM providers. See how much of a model's context window your content will consume *before* you spend the tokens. This is particularly useful for context engineering & token budgeting when building software using AI agents.
 
 ## Installation
 
-```bash
-pip install toks
-```
-
-Or with [uv](https://docs.astral.sh/uv/):
+Install as a tool with [uv](https://docs.astral.sh/uv/):
 
 ```bash
 uv tool install toks
 ```
 
-The `ct` shorthand alias is also available — `ct src/` is equivalent to `toks src/`.
+OR, if you're still a "pipper"
+
+```bash
+pip install toks
+```
+The `ct` ("count tokens") shorthand alias is also available — `ct src/` is equivalent to `toks src/`.
 
 ## Quick Start
 
