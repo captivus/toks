@@ -1,6 +1,6 @@
 [project]
 name = "toks"
-dynamic = ["version"]
+version = "0.3.1"
 description = "Count tokens for files across LLM providers from the command line"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -50,12 +50,9 @@ markers = [
     "grok: tests requiring xAI API key",
 ]
 
-[tool.hatch.version]
-path = "src/toks/__init__.py"
-
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["uv_build>=0.9.17,<0.10.0"]
+build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
