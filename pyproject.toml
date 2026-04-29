@@ -1,6 +1,6 @@
 [project]
 name = "toks"
-version = "0.3.2"
+version = "0.3.3"
 description = "Count tokens for files across LLM providers from the command line"
 readme = "README.md"
 requires-python = ">=3.11"

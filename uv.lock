@@ -3,7 +3,7 @@ revision = 3
 requires-python = ">=3.11"
 
 [options]
-exclude-newer = "2026-04-04T16:35:16.219491196Z"
+exclude-newer = "2026-04-22T18:41:03.523198271Z"
 exclude-newer-span = "P7D"
 
 [[package]]
@@ -225,7 +225,7 @@ wheels = [
 
 [[package]]
 name = "toks"
-version = "0.3.2"
+version = "0.3.3"
 source = { editable = "." }
 dependencies = [
     { name = "click" },
