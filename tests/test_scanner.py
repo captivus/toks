@@ -95,3 +95,16 @@ class TestScanFiles:
         empty.mkdir()
         results = scan_files(target=empty)
         assert results == []
+
+    def test_gitignore_respected_without_git_dir(self, tmp_path):
+        (tmp_path / ".gitignore").write_text("ignored/\n*.log\n")
+        (tmp_path / "keep.py").write_text("print('hi')\n")
+        (tmp_path / "debug.log").write_text("noise\n")
+        (tmp_path / "ignored").mkdir()
+        (tmp_path / "ignored" / "junk.py").write_text("x = 1\n")
+
+        results = scan_files(target=tmp_path)
+        names = {r[0].name for r in results}
+        assert "keep.py" in names
+        assert "debug.log" not in names
+        assert "junk.py" not in names

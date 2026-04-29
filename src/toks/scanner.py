@@ -104,11 +104,11 @@ def scan_files(
         raise ValueError(f"Not a directory: {target}")
 
     gitignore_spec = None
-    git_root = None
+    gitignore_root = None
     if not no_gitignore:
         git_root = find_git_root(start=target)
-        if git_root:
-            gitignore_spec = load_gitignore_specs(git_root=git_root, target=target)
+        gitignore_root = git_root if git_root else target
+        gitignore_spec = load_gitignore_specs(git_root=gitignore_root, target=target)
 
     results: list[tuple[Path, str, int]] = []
 
@@ -128,8 +128,8 @@ def scan_files(
             if file_path.is_symlink() and file_path.is_dir():
                 continue
 
-            if gitignore_spec and git_root:
-                rel = file_path.relative_to(git_root)
+            if gitignore_spec and gitignore_root:
+                rel = file_path.relative_to(gitignore_root)
                 if gitignore_spec.match_file(str(rel)):
                     continue
 
