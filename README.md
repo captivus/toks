@@ -136,6 +136,10 @@ toks models --refresh      # List known models / refresh registry
 - [Technical Documentation](docs/technical.md) -- architecture, module details, tutorials
 - [Feature Specification](docs/spec.md) -- complete design specification
 
+## Releasing (maintainer)
+
+Releases are cut from the project root with `release X.Y.Z` (or `release` for an interactive version prompt). The tool bumps `pyproject.toml`, commits, tags, pushes -- which triggers the PyPI publish workflow via GitHub Actions Trusted Publishing. Release notes auto-generate from commit messages between tags, so commits should read well as changelog entries.
+
 ## License
 
 [MIT](LICENSE)
