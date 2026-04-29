@@ -99,10 +99,32 @@ echo "  Building..."
 uv build --quiet 2>&1
 echo "  Build succeeded"
 
-# --- Release notes preview ---
+# --- Release notes ---
 
 # Find the previous tag to generate notes from
 PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+
+# Generate release notes from commit messages between PREV_TAG and HEAD.
+# We deliberately do NOT use --generate-notes from gh, since that builds the
+# body from merged PRs only -- empty when pushing directly to master.
+build_release_notes() {
+    local range
+    if [ -n "$PREV_TAG" ]; then
+        range="${PREV_TAG}..HEAD"
+    else
+        range=""
+    fi
+
+    local body
+    body=$(git log $range --no-merges --format='- %s' | grep -v '^- Release v' || true)
+
+    printf '## What'\''s Changed\n\n%s\n' "$body"
+    if [ -n "$PREV_TAG" ]; then
+        printf '\n**Full Changelog**: https://github.com/%s/compare/%s...%s\n' "$REPO" "$PREV_TAG" "$TAG"
+    fi
+}
+
+NOTES=$(build_release_notes)
 
 echo ""
 echo "=== Release plan: $PACKAGE_NAME $TAG ==="
@@ -111,7 +133,7 @@ echo "  1. Bump version $CURRENT_VERSION -> $VERSION in pyproject.toml"
 echo "  2. Commit: \"Release $TAG\""
 echo "  3. Create git tag $TAG"
 echo "  4. Push commit and tag to origin"
-echo "  5. Create GitHub release with auto-generated notes"
+echo "  5. Create GitHub release with notes derived from commit messages"
 echo "  6. Trigger publish workflow -> PyPI"
 echo ""
 echo "  PyPI: https://pypi.org/project/$PACKAGE_NAME/$VERSION/"
@@ -129,20 +151,7 @@ fi
 echo ""
 echo "=== Release notes preview ==="
 echo ""
-if [ -n "$PREV_TAG" ]; then
-    gh api "repos/$REPO/releases/generate-notes" \
-        --method POST \
-        --field tag_name="$TAG" \
-        --field previous_tag_name="$PREV_TAG" \
-        --field target_commitish="$(git rev-parse HEAD)" \
-        --jq '.body' 2>/dev/null || echo "(could not generate preview)"
-else
-    gh api "repos/$REPO/releases/generate-notes" \
-        --method POST \
-        --field tag_name="$TAG" \
-        --field target_commitish="$(git rev-parse HEAD)" \
-        --jq '.body' 2>/dev/null || echo "(could not generate preview -- first release)"
-fi
+echo "$NOTES"
 
 if [ "$DRY_RUN" = true ]; then
     echo ""
@@ -186,7 +195,7 @@ echo "  Pushed to origin"
 
 gh release create "$TAG" \
     --title "$TAG" \
-    --generate-notes
+    --notes "$NOTES"
 echo "  GitHub release created"
 
 # --- Watch workflow ---
