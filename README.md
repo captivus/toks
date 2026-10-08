@@ -53,7 +53,7 @@ cat file.py | toks - --for claude
 ### Output
 
 ```
-Provider: claude (claude-opus-4-6)
+Provider: claude (claude-opus-5-5)
 
 File                   Tokens  Agent    Web    API
 toks/                [17,911]   1.8%   9.0%   1.8%

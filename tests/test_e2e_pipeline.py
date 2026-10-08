@@ -27,16 +27,16 @@ FIXTURES = Path(__file__).parent / "fixtures"
 
 # Known-valid models confirmed by preflight tests
 VALID_MODELS = {
-    "claude": "claude-sonnet-4-6",
-    "openai": "gpt-4o-mini",
-    "gemini": "gemini-2.5-flash",
-    "grok": "grok-3",
+    "claude": "claude-sonnet-5-5",
+    "openai": "gpt-6.1-sol",
+    "gemini": "gemini-3.8-flash",
+    "grok": "grok-4.7",
 }
 
 VALID_AGENT_MODELS = {
-    "claude": "claude-sonnet-4-6",
-    "openai": "gpt-4o-mini",
-    "gemini": "gemini-2.5-flash",
+    "claude": "claude-sonnet-5-5",
+    "openai": "gpt-6.1-sol",
+    "gemini": "gemini-3.8-flash",
 }
 
 ENV_KEYS = {
@@ -151,7 +151,7 @@ class TestConfigRoundTrip:
             providers={
                 "claude": ProviderConfig(
                     api_key="sk-ant-abc123xyz",
-                    model="claude-sonnet-4-6",
+                    model="claude-sonnet-5-5",
                     plan="free",
                     has_coding_agent=False,
                 ),
@@ -171,7 +171,7 @@ class TestConfigRoundTrip:
             providers={
                 "openai": ProviderConfig(
                     api_key="sk-proj-abc=123+xyz/test",
-                    model="gpt-4o-mini",
+                    model="gpt-6.1-sol",
                     plan="free",
                     has_coding_agent=False,
                 ),

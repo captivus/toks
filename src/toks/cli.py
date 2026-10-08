@@ -174,7 +174,7 @@ def _run_count(
         sys.exit(1)
 
     if not resolved_model:
-        fallback = {"claude": "claude-sonnet-4-6", "openai": "gpt-4o-mini", "gemini": "gemini-2.5-flash", "grok": "grok-3"}
+        fallback = {"claude": "claude-sonnet-5-5", "openai": "gpt-6.1-sol", "gemini": "gemini-3.8-flash", "grok": "grok-4.7"}
         resolved_model = fallback.get(resolved_provider, "")
 
     api_key = load_env_api_key(provider=resolved_provider)

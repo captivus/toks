@@ -49,36 +49,36 @@ class TestGeminiProvider:
     def test_text_file(self, gemini_provider):
         content = (FIXTURES / "hello.txt").read_bytes()
         result = asyncio.run(gemini_provider.count_tokens(
-            content=content, mime_type="text/plain", model="gemini-2.5-flash",
+            content=content, mime_type="text/plain", model="gemini-3.8-flash",
         ))
         assert result.total_tokens > 0
-        assert result.model == "gemini-2.5-flash"
+        assert result.model == "gemini-3.8-flash"
 
     def test_python_file(self, gemini_provider):
         content = (FIXTURES / "hello.py").read_bytes()
         result = asyncio.run(gemini_provider.count_tokens(
-            content=content, mime_type="text/x-python", model="gemini-2.5-flash",
+            content=content, mime_type="text/x-python", model="gemini-3.8-flash",
         ))
         assert result.total_tokens > 0
 
     def test_image_png(self, gemini_provider):
         content = (FIXTURES / "image.png").read_bytes()
         result = asyncio.run(gemini_provider.count_tokens(
-            content=content, mime_type="image/png", model="gemini-2.5-flash",
+            content=content, mime_type="image/png", model="gemini-3.8-flash",
         ))
         assert result.total_tokens > 0
 
     def test_pdf(self, gemini_provider):
         content = (FIXTURES / "document.pdf").read_bytes()
         result = asyncio.run(gemini_provider.count_tokens(
-            content=content, mime_type="application/pdf", model="gemini-2.5-flash",
+            content=content, mime_type="application/pdf", model="gemini-3.8-flash",
         ))
         assert result.total_tokens > 0
 
     def test_modality_breakdown(self, gemini_provider):
         content = (FIXTURES / "hello.txt").read_bytes()
         result = asyncio.run(gemini_provider.count_tokens(
-            content=content, mime_type="text/plain", model="gemini-2.5-flash",
+            content=content, mime_type="text/plain", model="gemini-3.8-flash",
         ))
         # Gemini may or may not return breakdown for text-only
         assert result.total_tokens > 0
@@ -86,7 +86,7 @@ class TestGeminiProvider:
     def test_unsupported_binary(self, gemini_provider):
         with pytest.raises(UnsupportedFileTypeError):
             asyncio.run(gemini_provider.count_tokens(
-                content=b"\x00\x01\x02", mime_type="application/octet-stream", model="gemini-2.5-flash",
+                content=b"\x00\x01\x02", mime_type="application/octet-stream", model="gemini-3.8-flash",
             ))
 
 
@@ -97,29 +97,29 @@ class TestOpenAIProvider:
     def test_text_file(self, openai_provider):
         content = (FIXTURES / "hello.txt").read_bytes()
         result = asyncio.run(openai_provider.count_tokens(
-            content=content, mime_type="text/plain", model="gpt-4o-mini",
+            content=content, mime_type="text/plain", model="gpt-6.1-sol",
         ))
         assert result.total_tokens > 0
-        assert result.model == "gpt-4o-mini"
+        assert result.model == "gpt-6.1-sol"
 
     def test_python_file(self, openai_provider):
         content = (FIXTURES / "hello.py").read_bytes()
         result = asyncio.run(openai_provider.count_tokens(
-            content=content, mime_type="text/x-python", model="gpt-4o-mini",
+            content=content, mime_type="text/x-python", model="gpt-6.1-sol",
         ))
         assert result.total_tokens > 0
 
     def test_image_png(self, openai_provider):
         content = (FIXTURES / "image.png").read_bytes()
         result = asyncio.run(openai_provider.count_tokens(
-            content=content, mime_type="image/png", model="gpt-4o-mini",
+            content=content, mime_type="image/png", model="gpt-6.1-sol",
         ))
         assert result.total_tokens > 0
 
     def test_unsupported_binary(self, openai_provider):
         with pytest.raises(UnsupportedFileTypeError):
             asyncio.run(openai_provider.count_tokens(
-                content=b"\x00\x01\x02", mime_type="application/octet-stream", model="gpt-4o-mini",
+                content=b"\x00\x01\x02", mime_type="application/octet-stream", model="gpt-6.1-sol",
             ))
 
 
@@ -130,7 +130,7 @@ class TestClaudeProvider:
     def test_text_file(self, claude_provider):
         content = (FIXTURES / "hello.txt").read_bytes()
         result = asyncio.run(claude_provider.count_tokens(
-            content=content, mime_type="text/plain", model="claude-sonnet-4-6",
+            content=content, mime_type="text/plain", model="claude-sonnet-5-5",
         ))
         assert result.total_tokens > 0
 
@@ -140,7 +140,7 @@ class TestClaudeProvider:
             asyncio.run(claude_provider.count_tokens(
                 content=content,
                 mime_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                model="claude-sonnet-4-6",
+                model="claude-sonnet-5-5",
             ))
 
 
@@ -151,14 +151,14 @@ class TestGrokProvider:
     def test_text_file(self, grok_provider):
         content = (FIXTURES / "hello.txt").read_bytes()
         result = asyncio.run(grok_provider.count_tokens(
-            content=content, mime_type="text/plain", model="grok-3",
+            content=content, mime_type="text/plain", model="grok-4.7",
         ))
         assert result.total_tokens > 0
 
     def test_image_png_local_calculation(self, grok_provider):
         content = (FIXTURES / "image.png").read_bytes()
         result = asyncio.run(grok_provider.count_tokens(
-            content=content, mime_type="image/png", model="grok-3",
+            content=content, mime_type="image/png", model="grok-4.7",
         ))
         assert result.total_tokens > 0
 
@@ -170,7 +170,7 @@ class TestEdgeCases:
         """Empty files should return 0 tokens without hitting the API."""
         fr = FileResult(path=FIXTURES / "empty.txt", mime_type="text/plain", file_size=0)
         result = asyncio.run(count_file_tokens(
-            provider=gemini_provider, file_result=fr, model="gemini-2.5-flash", retries=0,
+            provider=gemini_provider, file_result=fr, model="gemini-3.8-flash", retries=0,
         ))
         assert result.status == "success"
         assert result.token_count is not None
@@ -181,7 +181,7 @@ class TestEdgeCases:
         """Claude should handle JPEG images."""
         content = (FIXTURES / "image.jpg").read_bytes()
         result = asyncio.run(claude_provider.count_tokens(
-            content=content, mime_type="image/jpeg", model="claude-sonnet-4-6",
+            content=content, mime_type="image/jpeg", model="claude-sonnet-5-5",
         ))
         assert result.total_tokens > 0
 
@@ -190,7 +190,7 @@ class TestEdgeCases:
         """Claude should handle PNG images."""
         content = (FIXTURES / "image.png").read_bytes()
         result = asyncio.run(claude_provider.count_tokens(
-            content=content, mime_type="image/png", model="claude-sonnet-4-6",
+            content=content, mime_type="image/png", model="claude-sonnet-5-5",
         ))
         assert result.total_tokens > 0
 
@@ -199,7 +199,7 @@ class TestEdgeCases:
         """Claude should handle PDF files."""
         content = (FIXTURES / "document.pdf").read_bytes()
         result = asyncio.run(claude_provider.count_tokens(
-            content=content, mime_type="application/pdf", model="claude-sonnet-4-6",
+            content=content, mime_type="application/pdf", model="claude-sonnet-5-5",
         ))
         assert result.total_tokens > 0
 
@@ -208,7 +208,7 @@ class TestEdgeCases:
         """OpenAI should handle JPEG images."""
         content = (FIXTURES / "image.jpg").read_bytes()
         result = asyncio.run(openai_provider.count_tokens(
-            content=content, mime_type="image/jpeg", model="gpt-4o-mini",
+            content=content, mime_type="image/jpeg", model="gpt-6.1-sol",
         ))
         assert result.total_tokens > 0
 
@@ -217,7 +217,7 @@ class TestEdgeCases:
         """Gemini should handle JPEG images."""
         content = (FIXTURES / "image.jpg").read_bytes()
         result = asyncio.run(gemini_provider.count_tokens(
-            content=content, mime_type="image/jpeg", model="gemini-2.5-flash",
+            content=content, mime_type="image/jpeg", model="gemini-3.8-flash",
         ))
         assert result.total_tokens > 0
 
@@ -230,7 +230,7 @@ class TestEdgeCases:
         asyncio.run(
             __import__("toks.runner", fromlist=["run_token_counting"]).run_token_counting(
                 provider=claude_provider, file_results=file_results,
-                model="claude-sonnet-4-6", concurrency=5, retries=1,
+                model="claude-sonnet-5-5", concurrency=5, retries=1,
             )
         )
         failed = [fr for fr in file_results if fr.status == "failed"]

@@ -33,7 +33,7 @@ class TestBasicCLI:
         assert "toks" in result.output.lower() or "usage" in result.output.lower()
 
     def test_nonexistent_file(self):
-        result = make_runner().invoke(app, ["/nonexistent/file.txt", "--model", "gemini-2.5-flash"])
+        result = make_runner().invoke(app, ["/nonexistent/file.txt", "--model", "gemini-3.8-flash"])
         assert result.exit_code != 0
 
     def test_no_provider_no_config(self, tmp_path, monkeypatch):
@@ -47,43 +47,43 @@ class TestBasicCLI:
 @pytest.mark.gemini
 class TestGeminiCLI:
     def test_single_file(self):
-        result = make_runner().invoke(app, [str(FIXTURES / "hello.txt"), "--model", "gemini-2.5-flash", "--no-progress"])
+        result = make_runner().invoke(app, [str(FIXTURES / "hello.txt"), "--model", "gemini-3.8-flash", "--no-progress"])
         assert result.exit_code == 0, f"Output: {result.output}"
         assert "tokens" in result.output.lower() or result.output.strip().isdigit()
 
     def test_directory(self):
-        result = make_runner().invoke(app, [str(FIXTURES), "--model", "gemini-2.5-flash", "--no-progress"])
+        result = make_runner().invoke(app, [str(FIXTURES), "--model", "gemini-3.8-flash", "--no-progress"])
         assert result.exit_code == 0, f"Output: {result.output}"
         assert "Total:" in result.output
 
     def test_quiet_mode(self):
-        result = make_runner().invoke(app, [str(FIXTURES / "hello.txt"), "--model", "gemini-2.5-flash", "-q"])
+        result = make_runner().invoke(app, [str(FIXTURES / "hello.txt"), "--model", "gemini-3.8-flash", "-q"])
         output = result.output.strip()
         assert output.isdigit(), f"Expected integer, got: {repr(output)}"
         assert int(output) > 0
 
     def test_summary_mode(self):
-        result = make_runner().invoke(app, [str(FIXTURES / "hello.txt"), "--model", "gemini-2.5-flash", "--summary"])
+        result = make_runner().invoke(app, [str(FIXTURES / "hello.txt"), "--model", "gemini-3.8-flash", "--summary"])
         assert "Total:" in result.output
 
     def test_glob_filter(self):
-        result = make_runner().invoke(app, [str(FIXTURES), "--model", "gemini-2.5-flash", "--glob", "*.py", "--no-progress"])
+        result = make_runner().invoke(app, [str(FIXTURES), "--model", "gemini-3.8-flash", "--glob", "*.py", "--no-progress"])
         assert result.exit_code == 0, f"Output: {result.output}"
         assert "hello.py" in result.output
 
     def test_max_size(self):
-        result = make_runner().invoke(app, [str(FIXTURES), "--model", "gemini-2.5-flash", "--max-size", "10", "--no-progress"])
+        result = make_runner().invoke(app, [str(FIXTURES), "--model", "gemini-3.8-flash", "--max-size", "10", "--no-progress"])
         assert result.exit_code == 0, f"Output: {result.output}"
 
 
 @pytest.mark.openai
 class TestOpenAICLI:
     def test_single_file(self):
-        result = make_runner().invoke(app, [str(FIXTURES / "hello.txt"), "--model", "gpt-4o-mini", "--no-progress"])
+        result = make_runner().invoke(app, [str(FIXTURES / "hello.txt"), "--model", "gpt-6.1-sol", "--no-progress"])
         assert result.exit_code == 0, f"Output: {result.output}"
 
     def test_quiet_mode(self):
-        result = make_runner().invoke(app, [str(FIXTURES / "hello.txt"), "--model", "gpt-4o-mini", "-q"])
+        result = make_runner().invoke(app, [str(FIXTURES / "hello.txt"), "--model", "gpt-6.1-sol", "-q"])
         output = result.output.strip()
         assert output.isdigit(), f"Expected integer, got: {repr(output)}"
         assert int(output) > 0

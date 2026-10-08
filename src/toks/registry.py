@@ -68,13 +68,20 @@ def lookup_model(*, model_id: str, registry: dict | None = None) -> dict | None:
         if isinstance(entry, dict):
             return entry
 
+    # Prefer the provider's own entry (e.g. "xai/grok-4.3") over reseller
+    # entries (e.g. "azure_ai/grok-4.3") that may appear earlier in the registry.
+    fallback = None
     for key, entry in registry.items():
         if not isinstance(entry, dict):
             continue
-        if key.endswith(f"/{model_id}") or key == model_id:
+        if not key.endswith(f"/{model_id}"):
+            continue
+        if key.count("/") == 1 and normalize_provider(litellm_provider=entry.get("litellm_provider", "")):
             return entry
+        if fallback is None:
+            fallback = entry
 
-    return None
+    return fallback
 
 
 def infer_provider(*, model_id: str, registry: dict | None = None) -> str | None:

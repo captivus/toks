@@ -63,7 +63,7 @@ def _count(provider, fixture_name, mime_type, model):
 
 @pytest.mark.claude
 class TestClaudeMatrix:
-    MODEL = "claude-sonnet-4-6"
+    MODEL = "claude-sonnet-5-5"
 
     def test_text(self, claude):
         result = _count(claude, *TEXT_FILE, self.MODEL)
@@ -100,7 +100,7 @@ class TestClaudeMatrix:
 
 @pytest.mark.openai
 class TestOpenAIMatrix:
-    MODEL = "gpt-4o-mini"
+    MODEL = "gpt-6.1-sol"
 
     def test_text(self, openai):
         result = _count(openai, *TEXT_FILE, self.MODEL)
@@ -137,7 +137,7 @@ class TestOpenAIMatrix:
 
 @pytest.mark.gemini
 class TestGeminiMatrix:
-    MODEL = "gemini-2.5-flash"
+    MODEL = "gemini-3.8-flash"
 
     def test_text(self, gemini):
         result = _count(gemini, *TEXT_FILE, self.MODEL)
@@ -175,7 +175,7 @@ class TestGeminiMatrix:
 
 @pytest.mark.grok
 class TestGrokMatrix:
-    MODEL = "grok-3"
+    MODEL = "grok-4.7"
 
     def test_text(self, grok):
         result = _count(grok, *TEXT_FILE, self.MODEL)

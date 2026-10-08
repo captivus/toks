@@ -46,42 +46,46 @@ class TestClaudePreflight:
 
     def test_sonnet(self):
         provider = ClaudeProvider(api_key=os.environ["ANTHROPIC_API_KEY"])
-        _preflight(provider, "claude-sonnet-4-6")
+        _preflight(provider, "claude-sonnet-5-5")
+
+    def test_opus(self):
+        provider = ClaudeProvider(api_key=os.environ["ANTHROPIC_API_KEY"])
+        _preflight(provider, "claude-opus-5-5")
 
     def test_haiku(self):
         provider = ClaudeProvider(api_key=os.environ["ANTHROPIC_API_KEY"])
-        _preflight(provider, "claude-haiku-4-5-20251001")
+        _preflight(provider, "claude-haiku-5-5")
 
 
 @pytest.mark.openai
 class TestOpenAIPreflight:
     """Validate all OpenAI models we might use."""
 
-    def test_gpt4o_mini(self):
+    def test_gpt_6_1_sol(self):
         provider = OpenAIProvider(api_key=os.environ["OPENAI_API_KEY"])
-        _preflight(provider, "gpt-4o-mini")
+        _preflight(provider, "gpt-6.1-sol")
 
 
 @pytest.mark.gemini
 class TestGeminiPreflight:
     """Validate all Gemini models we might use."""
 
-    def test_gemini_2_5_flash(self):
+    def test_gemini_3_8_flash(self):
         provider = GeminiProvider(api_key=os.environ["GEMINI_API_KEY"])
-        _preflight(provider, "gemini-2.5-flash")
+        _preflight(provider, "gemini-3.8-flash")
 
-    def test_gemini_2_5_pro(self):
+    def test_gemini_3_1_pro(self):
         provider = GeminiProvider(api_key=os.environ["GEMINI_API_KEY"])
-        _preflight(provider, "gemini-2.5-pro")
+        _preflight(provider, "gemini-3.1-pro-preview")
 
 
 @pytest.mark.grok
 class TestGrokPreflight:
     """Validate all Grok models we might use."""
 
-    def test_grok_3(self):
+    def test_grok_4_7(self):
         provider = GrokProvider(api_key=os.environ["GROK_API_KEY"])
-        _preflight(provider, "grok-3")
+        _preflight(provider, "grok-4.7")
 
 
 class TestConfiguredModelsPreflight:

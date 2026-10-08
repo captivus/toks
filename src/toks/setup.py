@@ -31,16 +31,16 @@ PLAN_OPTIONS: dict[str, list[tuple[str, str]]] = {
 }
 
 DEFAULT_MODELS: dict[str, str] = {
-    "claude": "claude-sonnet-4-6",
-    "openai": "gpt-4o-mini",
-    "gemini": "gemini-2.5-flash",
-    "grok": "grok-3",
+    "claude": "claude-sonnet-5-5",
+    "openai": "gpt-6.1-sol",
+    "gemini": "gemini-3.8-flash",
+    "grok": "grok-4.7",
 }
 
 DEFAULT_AGENT_MODELS: dict[str, str] = {
-    "claude": "claude-opus-4-6",
-    "openai": "gpt-4o-mini",
-    "gemini": "gemini-2.5-flash",
+    "claude": "claude-opus-5-5",
+    "openai": "gpt-6-sol",
+    "gemini": "gemini-3.8-flash",
 }
 
 ALL_PROVIDERS = ["claude", "openai", "gemini", "grok"]
@@ -121,10 +121,10 @@ class FixedPrompter:
 
 
 CURATED_MODELS: dict[str, list[str]] = {
-    "claude": ["claude-sonnet-4-6", "claude-opus-4-6", "claude-haiku-4-5-20251001"],
-    "openai": ["gpt-4o-mini", "gpt-4o", "chatgpt-4o-latest", "codex-mini-latest"],
-    "gemini": ["gemini-3.1-pro-preview", "gemini-3-flash-preview", "gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.0-flash"],
-    "grok": ["grok-4", "grok-3", "grok-3-fast-latest"],
+    "claude": ["claude-sonnet-5-5", "claude-opus-5-5", "claude-fable-5-1", "claude-haiku-5-5"],
+    "openai": ["gpt-6.1-sol", "gpt-6-astra", "gpt-6-sol", "gpt-6-luna", "gpt-5.5"],
+    "gemini": ["gemini-3.8-flash", "gemini-3.1-pro-preview", "gemini-3.5-flash-lite", "gemini-2.5-pro"],
+    "grok": ["grok-4.7", "grok-4.3", "grok-build-0.1"],
 }
 
 OTHER_OPTION = "Other (enter manually)"

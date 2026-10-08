@@ -31,17 +31,17 @@ class TestGatherConfig:
             "gemini API key": os.environ.get("GEMINI_API_KEY", "test-key"),
             "gemini plan": "Free",
             "coding agent": True,
-            "coding agent use": "gemini-2.5-flash",
-            "gemini model for the API": "gemini-2.5-flash",
+            "coding agent use": "gemini-3.8-flash",
+            "gemini model for the API": "gemini-3.8-flash",
             "default provider": "gemini",
         })
         config = gather_config(prompter=prompter, skip_validation=True)
         assert config is not None
         assert config.default_provider == "gemini"
         assert "gemini" in config.providers
-        assert config.providers["gemini"].model == "gemini-2.5-flash"
+        assert config.providers["gemini"].model == "gemini-3.8-flash"
         assert config.providers["gemini"].has_coding_agent is True
-        assert config.providers["gemini"].agent_model == "gemini-2.5-flash"
+        assert config.providers["gemini"].agent_model == "gemini-3.8-flash"
 
     def test_multiple_providers(self):
         prompter = FixedPrompter(answers={
@@ -49,13 +49,13 @@ class TestGatherConfig:
             "claude API key": "sk-test-claude",
             "claude plan": "Free",
             "claude.*coding agent?": True,
-            "claude.*coding agent use": "claude-opus-4-6",
-            "claude model for the API": "claude-sonnet-4-6",
+            "claude.*coding agent use": "claude-opus-5-5",
+            "claude model for the API": "claude-sonnet-5-5",
             "openai API key": "sk-test-openai",
             "openai plan": "Free",
             "openai.*coding agent?": True,
-            "openai.*coding agent use": "gpt-4o-mini",
-            "openai model for the API": "gpt-4o-mini",
+            "openai.*coding agent use": "gpt-6.1-sol",
+            "openai model for the API": "gpt-6.1-sol",
             "default provider": "claude",
         })
         config = gather_config(prompter=prompter, skip_validation=True)
@@ -75,7 +75,7 @@ class TestGatherConfig:
             "Which providers": ["grok"],
             "grok API key": "xai-test-key",
             "grok plan": "Free",
-            "grok model for the API": "grok-3",
+            "grok model for the API": "grok-4.7",
             "default provider": "grok",
         })
         config = gather_config(prompter=prompter, skip_validation=True)
@@ -91,8 +91,8 @@ class TestSaveAndLoadConfig:
             providers={
                 "gemini": ProviderConfig(
                     api_key="test-gemini-key",
-                    model="gemini-2.5-flash",
-                    agent_model="gemini-2.5-flash",
+                    model="gemini-3.8-flash",
+                    agent_model="gemini-3.8-flash",
                     plan="ai_pro",
                     has_coding_agent=True,
                 ),
@@ -109,8 +109,8 @@ class TestSaveAndLoadConfig:
         assert loaded is not None
         assert loaded.default_provider == "gemini"
         assert "gemini" in loaded.providers
-        assert loaded.providers["gemini"].model == "gemini-2.5-flash"
-        assert loaded.providers["gemini"].agent_model == "gemini-2.5-flash"
+        assert loaded.providers["gemini"].model == "gemini-3.8-flash"
+        assert loaded.providers["gemini"].agent_model == "gemini-3.8-flash"
         assert loaded.providers["gemini"].plan == "ai_pro"
         assert loaded.providers["gemini"].has_coding_agent is True
 
@@ -120,15 +120,15 @@ class TestSaveAndLoadConfig:
             providers={
                 "claude": ProviderConfig(
                     api_key="sk-ant-test",
-                    model="claude-sonnet-4-6",
-                    agent_model="claude-opus-4-6",
+                    model="claude-sonnet-5-5",
+                    agent_model="claude-opus-5-5",
                     plan="max_20x",
                     has_coding_agent=True,
                 ),
                 "openai": ProviderConfig(
                     api_key="sk-openai-test",
-                    model="gpt-4o-mini",
-                    agent_model="gpt-4o-mini",
+                    model="gpt-6.1-sol",
+                    agent_model="gpt-6.1-sol",
                     plan="plus",
                     has_coding_agent=True,
                 ),
@@ -153,8 +153,8 @@ class TestRunSetup:
             "gemini API key": os.environ.get("GEMINI_API_KEY", "test-key"),
             "gemini plan": "AI Pro ($19.99/mo)",
             "coding agent?": True,
-            "coding agent use": "gemini-2.5-flash",
-            "model for the API": "gemini-2.5-flash",
+            "coding agent use": "gemini-3.8-flash",
+            "model for the API": "gemini-3.8-flash",
             "default provider": "gemini",
         })
         run_setup(prompter=prompter, skip_validation=True)
@@ -172,7 +172,7 @@ class TestRunSetup:
             providers={
                 "gemini": ProviderConfig(
                     api_key="original-key",
-                    model="gemini-2.5-flash",
+                    model="gemini-3.8-flash",
                     plan="free",
                     has_coding_agent=False,
                 ),
@@ -185,8 +185,8 @@ class TestRunSetup:
             "gemini API key": "updated-key",
             "gemini plan": "Free",
             "coding agent?": True,
-            "coding agent use": "gemini-2.5-flash",
-            "model for the API": "gemini-2.5-flash",
+            "coding agent use": "gemini-3.8-flash",
+            "model for the API": "gemini-3.8-flash",
             "default provider": "gemini",
         })
         run_setup(prompter=prompter, skip_validation=True)

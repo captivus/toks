@@ -78,7 +78,7 @@ toks src/ --for gemini
 Output looks like this:
 
 ```
-Provider: gemini (gemini-2.5-flash)
+Provider: gemini (gemini-3.8-flash)
 
 File           Tokens  Agent    Web    API
 src/           [2,829]   0.3%   0.3%   0.3%
@@ -158,8 +158,8 @@ The default maximum file size is 50MB. Files larger than the limit are skipped.
 ### Override model
 
 ```bash
-toks file.py --model gpt-4o-mini
-toks file.py --model gemini-2.5-pro
+toks file.py --model gpt-6.1-sol
+toks file.py --model gemini-3.1-pro-preview
 ```
 
 When you use `--model`, the provider is automatically inferred from the model name.
@@ -241,7 +241,7 @@ Binary files (executables, archives, etc.) are excluded by default. Most provide
 The default output shows a file tree with token counts and three context window percentage columns:
 
 ```
-Provider: claude (claude-sonnet-4-6)
+Provider: claude (claude-sonnet-5-5)
 
 File             Tokens  Agent    Web    API
 src/            [4,812]   0.5%   2.4%   0.5%
@@ -285,7 +285,7 @@ Just the integer, nothing else:
 Totals and percentages, no tree:
 
 ```
-Provider: openai (gpt-4o-mini)
+Provider: openai (gpt-6.1-sol)
 
 Total: 4,812 tokens
   Agent (1M):  0.5%
@@ -324,25 +324,25 @@ Configuration lives in `~/.config/toks/`:
 default_provider = "claude"
 
 [providers.claude]
-model = "claude-sonnet-4-6"          # Model for API token counting
-agent_model = "claude-opus-4-6"      # Model your coding agent uses
+model = "claude-sonnet-5-5"          # Model for API token counting
+agent_model = "claude-opus-5-5"      # Model your coding agent uses
 plan = "max_20x"                     # Your subscription plan
 has_coding_agent = true              # Do you use Claude Code?
 
 [providers.openai]
-model = "gpt-4o-mini"
-agent_model = "gpt-4o-mini"
+model = "gpt-6.1-sol"
+agent_model = "gpt-6-sol"
 plan = "plus"
 has_coding_agent = true
 
 [providers.gemini]
-model = "gemini-2.5-flash"
-agent_model = "gemini-2.5-flash"
+model = "gemini-3.8-flash"
+agent_model = "gemini-3.8-flash"
 plan = "ai_pro"
 has_coding_agent = true
 
 [providers.grok]
-model = "grok-4"
+model = "grok-4.7"
 plan = "x_premium_plus"
 has_coding_agent = false              # Grok has no coding agent
 ```
@@ -766,8 +766,8 @@ When a new model is released, add it to `CURATED_MODELS` in `src/toks/setup.py`:
 
 ```python
 CURATED_MODELS = {
-    "claude": ["claude-sonnet-4-6", "claude-opus-4-6", ...],
-    "openai": ["gpt-4o-mini", "gpt-4o", ...],
+    "claude": ["claude-sonnet-5-5", "claude-opus-5-5", ...],
+    "openai": ["gpt-6.1-sol", "gpt-6-astra", ...],
     # Add new models to the appropriate provider list
 }
 ```
@@ -778,8 +778,8 @@ If a new model should be the default, update `DEFAULT_MODELS` in the same file:
 
 ```python
 DEFAULT_MODELS = {
-    "claude": "claude-sonnet-4-6",
-    "openai": "gpt-4o-mini",
+    "claude": "claude-sonnet-5-5",
+    "openai": "gpt-6.1-sol",
     # ...
 }
 ```
