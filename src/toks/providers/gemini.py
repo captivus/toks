@@ -41,7 +41,7 @@ class GeminiProvider:
         async with httpx.AsyncClient() as client:
             response = await client.post(
                 url,
-                params={"key": self._api_key},
+                headers={"x-goog-api-key": self._api_key},
                 json={"contents": [{"parts": parts}]},
                 timeout=120.0,
             )
