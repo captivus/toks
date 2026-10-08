@@ -200,14 +200,23 @@ class TestWebContextWindows:
     def test_claude_free(self):
         assert get_web_context_window(provider="claude", plan="free") == 200_000
 
-    def test_claude_enterprise(self):
-        assert get_web_context_window(provider="claude", plan="enterprise") == 500_000
+    def test_claude_free_ignores_model(self):
+        assert get_web_context_window(provider="claude", plan="free", model="claude-opus-5-5") == 200_000
+
+    def test_claude_paid_newest_model(self):
+        assert get_web_context_window(provider="claude", plan="max_20x", model="claude-sonnet-5-5") == 1_000_000
+
+    def test_claude_paid_4_x_model(self):
+        assert get_web_context_window(provider="claude", plan="pro", model="claude-opus-4-6") == 500_000
+
+    def test_claude_paid_unlisted_model(self):
+        assert get_web_context_window(provider="claude", plan="enterprise", model="claude-haiku-4-5") == 200_000
 
     def test_openai_free(self):
-        assert get_web_context_window(provider="openai", plan="free") == 16_000
+        assert get_web_context_window(provider="openai", plan="free") == 27_000
 
     def test_openai_plus(self):
-        assert get_web_context_window(provider="openai", plan="plus") == 32_000
+        assert get_web_context_window(provider="openai", plan="plus") == 54_000
 
     def test_openai_pro(self):
         assert get_web_context_window(provider="openai", plan="pro") == 128_000

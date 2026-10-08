@@ -261,7 +261,7 @@ def _run_count(
 
     if config and resolved_provider in config.providers:
         pc = config.providers[resolved_provider]
-        web_window = get_web_context_window(provider=resolved_provider, plan=pc.plan)
+        web_window = get_web_context_window(provider=resolved_provider, plan=pc.plan, model=resolved_model)
         if pc.has_coding_agent and pc.agent_model:
             agent_window = get_context_window(model_id=pc.agent_model, registry=registry)
 

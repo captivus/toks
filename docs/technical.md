@@ -244,17 +244,17 @@ The default output shows a file tree with token counts and three context window 
 Provider: claude (claude-sonnet-5-5)
 
 File             Tokens  Agent    Web    API
-src/            [4,812]   0.5%   2.4%   0.5%
-  main.py        1,203   0.1%   0.6%   0.1%
-  utils.py         890  <0.1%   0.4%  <0.1%
-  config.py        736  <0.1%   0.4%  <0.1%
-tests/          [1,983]   0.2%   1.0%   0.2%
-  test_main.py     890  <0.1%   0.4%  <0.1%
-  test_utils.py  1,093   0.1%   0.5%   0.1%
+src/            [4,812]   0.5%   0.5%   0.5%
+  main.py        1,203   0.1%   0.1%   0.1%
+  utils.py         890  <0.1%  <0.1%  <0.1%
+  config.py        736  <0.1%  <0.1%  <0.1%
+tests/          [1,983]   0.2%   0.2%   0.2%
+  test_main.py     890  <0.1%  <0.1%  <0.1%
+  test_utils.py  1,093   0.1%   0.1%   0.1%
 
 Total: 6,795 tokens
   Agent (1M):  0.7%
-  Web (200K):    3.4%
+  Web (1M):    0.7%
   API (1M):    0.7%
 ```
 
@@ -265,10 +265,10 @@ Each column shows what percentage of the context window your files consume in a 
 | Column | What it measures | Source |
 |--------|-----------------|--------|
 | **Agent** | Your coding agent (Claude Code, Codex, Gemini CLI) | Configured agent model's context window |
-| **Web** | Web chat (claude.ai, ChatGPT, Gemini web) | Determined by your subscription plan tier |
+| **Web** | Web chat (claude.ai, ChatGPT, Gemini web) | Determined by your subscription plan tier (and, on paid Claude plans, the model) |
 | **API** | Direct API usage | Configured API model's context window |
 
-These context windows can be very different. For example, with OpenAI on a Plus plan: the API model might have a 1M context window while the web chat is limited to 32K. The same 4,000 tokens would be 0.4% of API but 12.5% of web.
+These context windows can be very different. For example, with OpenAI on a Plus plan: the API model might have a 1M context window while the web chat is limited to 54K. The same 4,000 tokens would be 0.4% of API but 7.4% of web.
 
 For providers without a coding agent (Grok), the Agent column shows "N/A".
 
@@ -289,7 +289,7 @@ Provider: openai (gpt-6.1-sol)
 
 Total: 4,812 tokens
   Agent (1M):  0.5%
-  Web (32K):    15.0%
+  Web (54K):    8.9%
   API (1M):    0.5%
 ```
 
@@ -360,15 +360,16 @@ The tool also checks for a `.env` file in the current directory and falls back t
 
 ### Plan-to-web-context-window mapping
 
-Your subscription plan determines the Web column's context window:
+Your subscription plan determines the Web column's context window. On paid Claude plans, the model does too (`CLAUDE_PAID_WEB_MODEL_WINDOWS` in `src/toks/config.py`):
 
 | Provider | Plan | Web Context Window |
 |----------|------|--------------------|
-| Claude | Free, Pro, Max, Team, Team Premium | 200K |
-| Claude | Enterprise | 500K |
-| OpenAI | Free | 16K |
-| OpenAI | Go | 32K |
-| OpenAI | Plus, Business | 32K |
+| Claude | Free | 200K (unpublished by Anthropic) |
+| Claude | Paid plans: Opus 5/5.5, Sonnet 5/5.5, Haiku 5.5, Fable 5.1 | 1M |
+| Claude | Paid plans: Opus 4.6/4.7/4.8, Sonnet 4.6, Fable 5 | 500K |
+| Claude | Paid plans: other models | 200K |
+| OpenAI | Free | 27K |
+| OpenAI | Go, Plus, Business | 54K |
 | OpenAI | Pro, Enterprise | 128K |
 | Gemini | Free | 32K |
 | Gemini | AI Plus | 128K |
@@ -376,6 +377,8 @@ Your subscription plan determines the Web column's context window:
 | Grok | Free, X Premium, X Premium+ | 128K |
 | Grok | SuperGrok | 128K |
 | Grok | SuperGrok Heavy | 256K |
+
+OpenAI values are ChatGPT's Instant-mode limits; reasoning modes allow more (Go, Plus and Business 256K, Pro 400K). xAI doesn't publish per-plan app limits, so the Grok values are unverified.
 
 ### Runtime overrides
 

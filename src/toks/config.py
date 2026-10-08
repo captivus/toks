@@ -14,14 +14,20 @@ CONFIG_DIR = Path.home() / ".config" / "toks"
 CONFIG_FILE = CONFIG_DIR / "config.toml"
 ENV_FILE = CONFIG_DIR / ".env"
 
+# Consumer web/app context windows by plan. Sources (checked 2026-10-08):
+# - claude: Free is unpublished; paid plans depend on the model (see below).
+# - openai: https://chatgpt.com/pricing/ and https://openai.com/business/pricing/
+#   (Instant-mode totals; reasoning modes allow more: Go/Plus/Business 256K, Pro 400K)
+# - gemini: https://support.google.com/gemini/answer/16275805
+# - grok: xAI publishes no per-plan app limits; these values are unverified.
 WEB_CONTEXT_WINDOWS: dict[str, dict[str, int]] = {
     "claude": {
         "free": 200_000, "pro": 200_000, "max_5x": 200_000, "max_20x": 200_000,
-        "team_standard": 200_000, "team_premium": 200_000, "enterprise": 500_000,
+        "team_standard": 200_000, "team_premium": 200_000, "enterprise": 200_000,
     },
     "openai": {
-        "free": 16_000, "go": 32_000, "plus": 32_000, "pro": 128_000,
-        "business": 32_000, "enterprise": 128_000,
+        "free": 27_000, "go": 54_000, "plus": 54_000, "pro": 128_000,
+        "business": 54_000, "enterprise": 128_000,
     },
     "gemini": {
         "free": 32_000, "ai_plus": 128_000, "ai_pro": 1_000_000, "ai_ultra": 1_000_000,
@@ -32,10 +38,30 @@ WEB_CONTEXT_WINDOWS: dict[str, dict[str, int]] = {
     },
 }
 
+# claude.ai paid plans set the context window per model; models not listed get the
+# plan default above. Source (checked 2026-10-08):
+# https://support.claude.com/en/articles/8606394-how-large-is-the-context-window-on-paid-claude-plans
+CLAUDE_PAID_WEB_MODEL_WINDOWS: dict[str, int] = {
+    "claude-fable-5-1": 1_000_000,
+    "claude-fable-5": 500_000,
+    "claude-opus-5-5": 1_000_000,
+    "claude-opus-5": 1_000_000,
+    "claude-opus-4-8": 500_000,
+    "claude-opus-4-7": 500_000,
+    "claude-opus-4-6": 500_000,
+    "claude-sonnet-5-5": 1_000_000,
+    "claude-sonnet-5": 1_000_000,
+    "claude-sonnet-4-6": 500_000,
+    "claude-haiku-5-5": 1_000_000,
+}
 
-def get_web_context_window(*, provider: str, plan: str) -> int | None:
+
+def get_web_context_window(*, provider: str, plan: str, model: str | None = None) -> int | None:
     provider_plans = WEB_CONTEXT_WINDOWS.get(provider, {})
-    return provider_plans.get(plan)
+    window = provider_plans.get(plan)
+    if provider == "claude" and plan != "free" and window is not None and model:
+        return CLAUDE_PAID_WEB_MODEL_WINDOWS.get(model, window)
+    return window
 
 
 def _clean_api_key(*, value: str, env_key: str) -> str:
